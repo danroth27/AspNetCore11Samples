@@ -1,4 +1,3 @@
-using BlazorFeatures.Client.Pages;
 using BlazorFeatures.Components;
 using BlazorFeatures.Services;
 using Microsoft.AspNetCore.Components;
@@ -7,8 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
-    .AddInteractiveWebAssemblyComponents();
+    .AddInteractiveServerComponents();
 
 // =============================================================================
 // FEATURE: IComponentPropertyActivator for custom property injection
@@ -24,11 +22,7 @@ builder.Services.AddKeyedScoped<ISampleService, PremiumSampleService>("premium")
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseWebAssemblyDebugging();
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
@@ -64,8 +58,6 @@ app.MapRazorComponents<App>()
             // - MinimumProtocolVersion
             connectionOptions.CloseOnAuthenticationExpiration = true;
         };
-    })
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(BlazorFeatures.Client._Imports).Assembly);
+    });
 
 app.Run();
