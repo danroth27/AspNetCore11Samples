@@ -1,0 +1,70 @@
+﻿<script type="module" src="@Assets["Components/Layout/NavMenu.razor.js"]"></script>
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">.NET 11 Preview 1</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div id="nav-scrollable" class="nav-scrollable">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <h6 class="px-3 mt-3 text-muted">Blazor Components</h6>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="environment-boundary">
+                EnvironmentBoundary
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="label-demo">
+                Label Component
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="displayname-demo">
+                DisplayName Component
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="quickgrid-onrowclick">
+                QuickGrid OnRowClick
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="navigation-features">
+                Navigation Features
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="mathml-demo">
+                MathML Support
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="inputfile-cancel">
+                InputFile Cancel
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="bl0010-analyzer">
+                BL0010 Analyzer
+            </NavLink>
+        </div>
+    </nav>
+</div>
+

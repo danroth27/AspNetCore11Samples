@@ -1,0 +1,83 @@
+@page "/mathml-demo"
+@rendermode InteractiveServer
+
+<PageTitle>MathML Support Demo</PageTitle>
+
+<h1>MathML Namespace Support</h1>
+
+<p>Blazor now properly supports MathML elements in interactive rendering with the correct namespace.</p>
+
+<h2>Quadratic Formula</h2>
+<div class="p-4 bg-light rounded">
+    <math display="block">
+        <mrow>
+            <mi>x</mi>
+            <mo>=</mo>
+            <mfrac>
+                <mrow>
+                    <mo>−</mo>
+                    <mi>b</mi>
+                    <mo>±</mo>
+                    <msqrt>
+                        <mrow>
+                            <msup><mi>b</mi><mn>2</mn></msup>
+                            <mo>−</mo>
+                            <mn>4</mn>
+                            <mi>a</mi>
+                            <mi>c</mi>
+                        </mrow>
+                    </msqrt>
+                </mrow>
+                <mrow>
+                    <mn>2</mn>
+                    <mi>a</mi>
+                </mrow>
+            </mfrac>
+        </mrow>
+    </math>
+</div>
+
+<h2>Sum Notation</h2>
+<div class="p-4 bg-light rounded">
+    <math display="block">
+        <mrow>
+            <munderover>
+                <mo>∑</mo>
+                <mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow>
+                <mi>n</mi>
+            </munderover>
+            <mi>i</mi>
+            <mo>=</mo>
+            <mfrac>
+                <mrow><mi>n</mi><mo>(</mo><mi>n</mi><mo>+</mo><mn>1</mn><mo>)</mo></mrow>
+                <mn>2</mn>
+            </mfrac>
+        </mrow>
+    </math>
+</div>
+
+<h2>Dynamic MathML</h2>
+<div class="mb-3">
+    <label class="form-label">Enter a value for x:</label>
+    <input type="number" @bind="xValue" class="form-control" style="max-width: 200px" />
+</div>
+
+<div class="p-4 bg-light rounded">
+    <math display="block">
+        <mrow>
+            <msup><mi>x</mi><mn>2</mn></msup>
+            <mo>=</mo>
+            <msup><mn>@xValue</mn><mn>2</mn></msup>
+            <mo>=</mo>
+            <mn>@(xValue * xValue)</mn>
+        </mrow>
+    </math>
+</div>
+
+<h2>Notes</h2>
+<p>MathML elements are now created with the correct namespace (<code>http://www.w3.org/1998/Math/MathML</code>) 
+using <code>document.createElementNS()</code>, similar to SVG elements.</p>
+
+@code {
+    private int xValue = 5;
+}

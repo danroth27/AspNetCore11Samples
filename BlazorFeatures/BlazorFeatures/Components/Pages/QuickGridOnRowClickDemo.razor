@@ -1,0 +1,66 @@
+@page "/quickgrid-onrowclick"
+@rendermode InteractiveServer
+
+<PageTitle>QuickGrid OnRowClick Demo</PageTitle>
+
+<h1>QuickGrid OnRowClick Event</h1>
+
+<p>The <code>QuickGrid</code> component now supports row click events through the <code>OnRowClick</code> parameter.</p>
+
+<h2>Demo</h2>
+
+<QuickGrid Items="@people.AsQueryable()" OnRowClick="@((Person p) => HandleRowClick(p))">
+    <PropertyColumn Property="@(p => p.Id)" />
+    <PropertyColumn Property="@(p => p.Name)" />
+    <PropertyColumn Property="@(p => p.Email)" />
+    <PropertyColumn Property="@(p => p.Department)" />
+</QuickGrid>
+
+@if (selectedPerson is not null)
+{
+    <div class="alert alert-info mt-3">
+        <h4>Selected Person</h4>
+        <p><strong>ID:</strong> @selectedPerson.Id</p>
+        <p><strong>Name:</strong> @selectedPerson.Name</p>
+        <p><strong>Email:</strong> @selectedPerson.Email</p>
+        <p><strong>Department:</strong> @selectedPerson.Department</p>
+    </div>
+}
+else
+{
+    <p class="text-muted mt-3">Click a row to see details.</p>
+}
+
+<h2>Code</h2>
+<pre><code>&lt;QuickGrid Items="@@people.AsQueryable()" OnRowClick="@@HandleRowClick"&gt;
+    &lt;PropertyColumn Property="@@(p => p.Name)" /&gt;
+    &lt;PropertyColumn Property="@@(p => p.Email)" /&gt;
+&lt;/QuickGrid&gt;
+
+@@code {
+    void HandleRowClick(Person person)
+    {
+        selectedPerson = person;
+        // Or navigate: NavigationManager.NavigateTo($"/person/{person.Id}");
+    }
+}</code></pre>
+
+@code {
+    private Person? selectedPerson;
+
+    private List<Person> people = new()
+    {
+        new(1, "Alice Smith", "alice@example.com", "Engineering"),
+        new(2, "Bob Johnson", "bob@example.com", "Marketing"),
+        new(3, "Carol Williams", "carol@example.com", "Engineering"),
+        new(4, "David Brown", "david@example.com", "Sales"),
+        new(5, "Eve Davis", "eve@example.com", "HR")
+    };
+
+    private void HandleRowClick(Person person)
+    {
+        selectedPerson = person;
+    }
+
+    public record Person(int Id, string Name, string Email, string Department);
+}

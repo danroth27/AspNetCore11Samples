@@ -1,0 +1,68 @@
+@page "/bl0010-analyzer"
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<PageTitle>BL0010 Analyzer Demo</PageTitle>
+
+<h1>BL0010 Analyzer</h1>
+
+<p>The new <code>BL0010</code> analyzer recommends using <code>InvokeVoidAsync</code> instead of <code>InvokeAsync&lt;object&gt;</code> for JavaScript functions that don't return values.</p>
+
+<h2>Demo</h2>
+
+<button class="btn btn-primary me-2" @onclick="CallJSCorrectly">
+    ✅ Correct: InvokeVoidAsync
+</button>
+
+<button class="btn btn-warning" @onclick="CallJSIncorrectly">
+    ⚠️ Triggers BL0010: InvokeAsync&lt;object&gt;
+</button>
+
+<div class="mt-3">
+    <strong>Result:</strong> @result
+</div>
+
+<h2>Analyzer Warning</h2>
+<div class="alert alert-warning">
+    <strong>BL0010:</strong> Use <code>InvokeVoidAsync</code> for JavaScript functions that don't return a value.
+</div>
+
+<h2>Code Comparison</h2>
+
+<h3>❌ Problematic Code (triggers BL0010)</h3>
+<pre><code>// This will trigger analyzer warning BL0010
+await JSRuntime.InvokeAsync&lt;object&gt;("console.log", "Hello");
+</code></pre>
+
+<h3>✅ Recommended Code</h3>
+<pre><code>// Use InvokeVoidAsync when no return value is needed
+await JSRuntime.InvokeVoidAsync("console.log", "Hello");
+</code></pre>
+
+<h2>Why This Matters</h2>
+<ul>
+    <li><code>InvokeVoidAsync</code> is more efficient - no need to serialize/deserialize a return value</li>
+    <li>Clearly communicates intent that no return value is expected</li>
+    <li>Reduces unnecessary allocations</li>
+</ul>
+
+@code {
+    private string result = "Click a button to call JavaScript";
+
+    private async Task CallJSCorrectly()
+    {
+        // ✅ Correct: Use InvokeVoidAsync for void JS functions
+        await JS.InvokeVoidAsync("console.log", "Hello from Blazor (correct way)");
+        result = "Called console.log using InvokeVoidAsync ✅";
+    }
+
+    private async Task CallJSIncorrectly()
+    {
+        // ⚠️ This triggers BL0010 warning in the IDE
+        // The analyzer will suggest using InvokeVoidAsync instead
+#pragma warning disable BL0010
+        await JS.InvokeAsync<object>("console.log", "Hello from Blazor (triggers analyzer)");
+#pragma warning restore BL0010
+        result = "Called console.log using InvokeAsync<object> ⚠️ (check browser console)";
+    }
+}

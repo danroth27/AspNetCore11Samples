@@ -1,0 +1,45 @@
+@page "/environment-boundary"
+@rendermode InteractiveServer
+
+<PageTitle>EnvironmentBoundary Demo</PageTitle>
+
+<h1>EnvironmentBoundary Component</h1>
+
+<p>The <code>EnvironmentBoundary</code> component conditionally renders content based on the hosting environment.</p>
+
+<h2>Current Environment</h2>
+<p>Your app is running in: <strong>@Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")</strong></p>
+
+<h2>Demo</h2>
+
+<h3>Include="Development"</h3>
+<EnvironmentBoundary Include="Development">
+    <div class="alert alert-warning">
+        ⚠️ Debug mode enabled - This only shows in Development
+    </div>
+</EnvironmentBoundary>
+
+<h3>Include="Development,Staging"</h3>
+<EnvironmentBoundary Include="Development,Staging">
+    <div class="alert alert-info">
+        ℹ️ Pre-production environment - Shows in Development or Staging
+    </div>
+</EnvironmentBoundary>
+
+<h3>Exclude="Production"</h3>
+<EnvironmentBoundary Exclude="Production">
+    <div class="alert alert-secondary">
+        🕐 Current time: @DateTime.Now.ToString("HH:mm:ss") - Hidden in Production
+    </div>
+</EnvironmentBoundary>
+
+<h3>Include="Production"</h3>
+<EnvironmentBoundary Include="Production">
+    <div class="alert alert-success">
+        ✅ Production environment - Only shows in Production
+    </div>
+</EnvironmentBoundary>
+
+@code {
+    // No code needed - EnvironmentBoundary uses IHostEnvironment internally
+}

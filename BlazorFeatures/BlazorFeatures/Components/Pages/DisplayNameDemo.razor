@@ -1,0 +1,89 @@
+@page "/displayname-demo"
+@rendermode InteractiveServer
+
+<PageTitle>DisplayName Component Demo</PageTitle>
+
+<h1>DisplayName Component</h1>
+
+<p>The <code>DisplayName</code> component extracts and displays property names from metadata attributes, similar to MVC's <code>@@Html.DisplayNameFor()</code>.</p>
+
+<h2>Table Headers Example</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th><DisplayName For="() => sampleProduct.Name" /></th>
+            <th><DisplayName For="() => sampleProduct.Price" /></th>
+            <th><DisplayName For="() => sampleProduct.Category" /></th>
+            <th><DisplayName For="() => sampleProduct.InStock" /></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in products)
+        {
+            <tr>
+                <td>@p.Name</td>
+                <td>@p.Price.ToString("C")</td>
+                <td>@p.Category</td>
+                <td>@(p.InStock ? "Yes" : "No")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>Form Labels Example</h2>
+<EditForm Model="sampleProduct" FormName="displayname-form">
+    <div class="mb-3">
+        <label class="form-label">
+            <DisplayName For="() => sampleProduct.Name" />
+        </label>
+        <InputText @bind-Value="sampleProduct.Name" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">
+            <DisplayName For="() => sampleProduct.Category" />
+        </label>
+        <InputText @bind-Value="sampleProduct.Category" class="form-control" />
+    </div>
+</EditForm>
+
+<h2>Model Definition</h2>
+<pre><code>public class Product
+{
+    [Display(Name = "Product Name")]
+    public string Name { get; set; }
+
+    [Display(Name = "Unit Price")]
+    public decimal Price { get; set; }
+
+    [DisplayName("Product Category")]
+    public string Category { get; set; }
+
+    // No attribute - falls back to property name
+    public bool InStock { get; set; }
+}</code></pre>
+
+@code {
+    private Product sampleProduct = new() { Name = "Sample", Price = 9.99m, Category = "Demo", InStock = true };
+
+    private List<Product> products = new()
+    {
+        new() { Name = "Widget", Price = 19.99m, Category = "Electronics", InStock = true },
+        new() { Name = "Gadget", Price = 29.99m, Category = "Electronics", InStock = false },
+        new() { Name = "Gizmo", Price = 14.99m, Category = "Tools", InStock = true }
+    };
+
+    public class Product
+    {
+        [System.ComponentModel.DataAnnotations.Display(Name = "Product Name")]
+        public string Name { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Display(Name = "Unit Price")]
+        public decimal Price { get; set; }
+
+        [System.ComponentModel.DisplayName("Product Category")]
+        public string Category { get; set; } = "";
+
+        // No attribute - falls back to property name
+        public bool InStock { get; set; }
+    }
+}

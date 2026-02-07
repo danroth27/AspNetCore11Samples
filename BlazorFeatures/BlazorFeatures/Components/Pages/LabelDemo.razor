@@ -1,0 +1,68 @@
+@page "/label-demo"
+@rendermode InteractiveServer
+
+<PageTitle>Label Component Demo</PageTitle>
+
+<h1>Label Component</h1>
+
+<p>The <code>Label</code> component renders accessible form labels with support for <code>[Display]</code> and <code>[DisplayName]</code> attributes.</p>
+
+<h2>Non-Nested Pattern (for/id association)</h2>
+<EditForm Model="product" FormName="non-nested-form">
+    <div class="mb-3">
+        <Label For="() => product.Name" class="form-label" />
+        <InputText @bind-Value="product.Name" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <Label For="() => product.Price" class="form-label" />
+        <InputNumber @bind-Value="product.Price" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <Label For="() => product.ReleaseDate" class="form-label" />
+        <InputDate @bind-Value="product.ReleaseDate" class="form-control" />
+    </div>
+</EditForm>
+
+<h2>Nested Pattern (implicit association)</h2>
+<EditForm Model="product" FormName="nested-form">
+    <div class="mb-3">
+        <Label For="() => product.Description" class="form-label">
+            <InputTextArea @bind-Value="product.Description" class="form-control" rows="3" />
+        </Label>
+    </div>
+</EditForm>
+
+<h2>Model Definition</h2>
+<pre><code>public class Product
+{
+    [Display(Name = "Product Name")]
+    public string Name { get; set; }
+
+    [Display(Name = "Unit Price", Description = "Price in USD")]
+    public decimal Price { get; set; }
+
+    [Display(Name = "Release Date")]
+    public DateTime ReleaseDate { get; set; }
+
+    [DisplayName("Product Description")]
+    public string Description { get; set; }
+}</code></pre>
+
+@code {
+    private Product product = new();
+
+    public class Product
+    {
+        [System.ComponentModel.DataAnnotations.Display(Name = "Product Name")]
+        public string Name { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Display(Name = "Unit Price", Description = "Price in USD")]
+        public decimal Price { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Display(Name = "Release Date")]
+        public DateTime ReleaseDate { get; set; } = DateTime.Today;
+
+        [System.ComponentModel.DisplayName("Product Description")]
+        public string Description { get; set; } = "";
+    }
+}
