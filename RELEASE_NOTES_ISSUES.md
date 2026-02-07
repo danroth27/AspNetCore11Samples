@@ -39,13 +39,13 @@ This correctly uses `AddInteractiveServerRenderMode` with `ServerComponentsEndpo
 
 ---
 
-### 3. Docker Template - DOES NOT EXIST
-**Severity:** High  
+### 3. Docker Template - Visual Studio Only
+**Severity:** Clarification needed  
 **PR Reference:** PR #10237
 
 **Release Notes Claim:** "The Blazor WebAssembly project template now includes Docker support out of the box."
 
-**Reality:** Running `dotnet new blazorwasm --help` shows NO Docker-related options. The generated project does NOT include a Dockerfile.
+**Clarification:** The Docker option is available in Visual Studio's project creation wizard, not via `dotnet new` CLI. This is expected behavior but could be clarified in the release notes.
 
 ---
 

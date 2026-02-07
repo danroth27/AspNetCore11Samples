@@ -51,9 +51,9 @@ dotnet run
 
 See [RELEASE_NOTES_ISSUES.md](RELEASE_NOTES_ISSUES.md) for documentation issues found during testing.
 
-### Remaining Issue:
-1. **Docker Template** - Claimed Docker support doesn't exist in the template
+### Minor Clarification Needed:
+- **Docker Template** - Available in Visual Studio only, not via CLI
 
 ### Resolved Issues:
-- **IOutputCachePolicyProvider** - Updated `TenantOutputCachePolicyProvider` sample now compiles ✅
+- **IOutputCachePolicyProvider** - Updated `TenantOutputCachePolicyProvider` sample compiles ✅
 - **SignalR ConfigureConnection** - Now shows correct API using `AddInteractiveServerRenderMode` ✅
