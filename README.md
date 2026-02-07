@@ -13,7 +13,6 @@ Blazor Web App demonstrating new Blazor components and features:
 - **QuickGrid OnRowClick** - Row click event handling
 - **Navigation Features** - `RelativeToCurrentUri` and `GetUriWithHash()`
 - **MathML Support** - Proper MathML namespace in interactive rendering
-- **InputFile Cancel** - Detect file selection cancellation
 - **BL0010 Analyzer** - JSInterop best practices analyzer
 
 ### ApiFeatures  
