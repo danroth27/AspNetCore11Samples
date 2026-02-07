@@ -113,39 +113,12 @@ record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 //     ValueTask<IOutputCachePolicy?> GetPolicyAsync(string policyName);
 // }
 //
-// CRITICAL DOCUMENTATION ISSUES IN PR #10237:
+// The latest sample in PR #10237 (TenantOutputCachePolicyProvider) is now CORRECT.
+// See TenantOutputCachePolicyProvider.cs for a working implementation that:
+// - Returns empty from GetBasePolicies()
+// - Loads policies from a custom tenant service
+// - Uses a custom IOutputCachePolicy implementation
 //
-// 1. The code sample shows accessing _options.Value.BasePolicies and 
-//    _options.Value.NamedPolicies, but these properties are INTERNAL.
-//    Custom providers cannot access them.
-//
-// 2. The earlier sample showed new OutputCachePolicyBuilder().Expire(...).Build()
-//    but OutputCachePolicyBuilder's constructor and Build() are also INTERNAL.
-//
-// As of .NET 11 Preview 1, there is NO WAY to implement IOutputCachePolicyProvider
-// that delegates to the built-in options because the required properties are internal.
-//
-// Users must implement IOutputCachePolicy directly and manage their own policy storage.
+// Note: OutputCacheOptions.BasePolicies and NamedPolicies are still internal,
+// but the updated sample doesn't rely on them.
 // =============================================================================
-
-// Attempt to implement the PR's sample code (WILL NOT COMPILE):
-// public class DatabaseOutputCachePolicyProvider : IOutputCachePolicyProvider
-// {
-//     private readonly IOptions<OutputCacheOptions> _options;
-//     
-//     public IReadOnlyList<IOutputCachePolicy> GetBasePolicies()
-//     {
-//         // ERROR: 'OutputCacheOptions.BasePolicies' is inaccessible due to its protection level
-//         if (_options.Value.BasePolicies is not null)
-//             return _options.Value.BasePolicies;
-//         return Array.Empty<IOutputCachePolicy>();
-//     }
-//     
-//     public ValueTask<IOutputCachePolicy?> GetPolicyAsync(string policyName)
-//     {
-//         // ERROR: 'OutputCacheOptions.NamedPolicies' is inaccessible due to its protection level
-//         if (_options.Value.NamedPolicies?.TryGetValue(policyName, out var policy) == true)
-//             return ValueTask.FromResult<IOutputCachePolicy?>(policy);
-//         return ValueTask.FromResult<IOutputCachePolicy?>(null);
-//     }
-// }

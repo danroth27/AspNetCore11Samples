@@ -2,30 +2,18 @@
 
 Issues discovered while validating .NET 11 Preview 1 features against the proposed release notes (PR #10237).
 
-## Critical Issues Found
+## Resolved Issues ✅
 
-### 1. IOutputCachePolicyProvider - ALL CODE SAMPLES BROKEN
-**Severity:** Critical  
+### 1. IOutputCachePolicyProvider - ✅ NOW CORRECT
+**Severity:** Resolved  
 **PR Reference:** PR #10237
 
-**Issue 1 - OutputCachePolicyBuilder is internal:**
-The release notes show:
-```csharp
-new OutputCachePolicyBuilder().Expire(TimeSpan.FromMinutes(5)).Build()
-```
-But `OutputCachePolicyBuilder` has an **internal constructor** and **internal `Build()` method**. This code will NOT compile.
+The latest sample (`TenantOutputCachePolicyProvider`) now correctly shows how to implement `IOutputCachePolicyProvider` without relying on internal APIs. It:
+- Returns an empty list from `GetBasePolicies()` 
+- Implements custom policy loading from a tenant service
+- Uses a custom `IOutputCachePolicy` implementation
 
-**Issue 2 - BasePolicies and NamedPolicies are internal:**
-The updated sample shows:
-```csharp
-if (_options.Value.BasePolicies is not null)
-    return _options.Value.BasePolicies;
-if (_options.Value.NamedPolicies?.TryGetValue(policyName, out var policy) == true)
-    return ValueTask.FromResult<IOutputCachePolicy?>(policy);
-```
-But `OutputCacheOptions.BasePolicies` and `OutputCacheOptions.NamedPolicies` are **internal properties**. This code will NOT compile either.
-
-**Conclusion:** As of .NET 11 Preview 1, there is NO WAY to implement `IOutputCachePolicyProvider` that delegates to the built-in options because all required APIs are internal.
+The sample compiles and runs correctly ✅
 
 ---
 
