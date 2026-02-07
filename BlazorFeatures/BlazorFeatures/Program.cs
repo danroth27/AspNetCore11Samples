@@ -1,5 +1,7 @@
 using BlazorFeatures.Client.Pages;
 using BlazorFeatures.Components;
+using BlazorFeatures.Services;
+using Microsoft.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// =============================================================================
+// FEATURE: IComponentPropertyActivator for custom property injection
+// Register a custom property activator that logs all property injections.
+// This replaces the default property injection behavior for all components.
+// =============================================================================
+builder.Services.AddSingleton<IComponentPropertyActivator, LoggingPropertyActivator>();
+
+// Register a sample service to demonstrate injection logging
+builder.Services.AddScoped<ISampleService, SampleService>();
+builder.Services.AddKeyedScoped<ISampleService, PremiumSampleService>("premium");
 
 var app = builder.Build();
 
