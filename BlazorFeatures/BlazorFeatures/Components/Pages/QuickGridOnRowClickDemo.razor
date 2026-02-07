@@ -10,7 +10,7 @@
 
 <h2>Demo</h2>
 
-<QuickGrid Items="@people.AsQueryable()" OnRowClick="@((Person p) => HandleRowClick(p))">
+<QuickGrid TGridItem="Person" Items="@people.AsQueryable()" OnRowClick="@HandleRowClick">
     <PropertyColumn Property="@(p => p.Id)" />
     <PropertyColumn Property="@(p => p.Name)" />
     <PropertyColumn Property="@(p => p.Email)" />

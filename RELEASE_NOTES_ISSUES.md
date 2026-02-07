@@ -11,14 +11,18 @@ Issues discovered while validating .NET 11 Preview 1 features against the propos
 <QuickGrid Items="@people" OnRowClick="@HandleRowClick">
 ```
 
-**Actual Syntax Required:**
+**Working Alternatives:**
 ```csharp
+// Option 1: Explicit TGridItem (allows method group syntax)
+<QuickGrid TGridItem="Person" Items="@people.AsQueryable()" OnRowClick="@HandleRowClick">
+
+// Option 2: Lambda syntax (no explicit TGridItem needed)
 <QuickGrid Items="@people.AsQueryable()" OnRowClick="@((Person p) => HandleRowClick(p))">
 ```
 
 **Notes:**
-- Need lambda syntax for the callback
-- Items needs to be `IQueryable<T>` not `IEnumerable<T>`
+- Items needs to be `IQueryable<T>` (use `.AsQueryable()` on lists)
+- Either specify `TGridItem` explicitly OR use lambda syntax for type inference
 
 ---
 
