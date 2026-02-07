@@ -1,5 +1,6 @@
 @page "/quickgrid-onrowclick"
 @rendermode InteractiveServer
+@using BlazorFeatures.Models
 
 <PageTitle>QuickGrid OnRowClick Demo</PageTitle>
 
@@ -61,6 +62,4 @@ else
     {
         selectedPerson = person;
     }
-
-    public record Person(int Id, string Name, string Email, string Department);
 }
