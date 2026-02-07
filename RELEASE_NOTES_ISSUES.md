@@ -4,26 +4,7 @@ Issues discovered while validating .NET 11 Preview 1 features against the propos
 
 ## Issues Found
 
-### 1. InputFile Cancel Event - INACCURATE
-**Severity:** High  
-**Release Notes Claim:** 
-> The `InputFile` component now supports detecting when file selection is canceled through the new `OnCancel` event callback.
-
-**Actual Behavior:**
-- There is NO `OnCancel` parameter on `InputFile`
-- The cancel event fires the existing `OnChange` callback with an empty file list (`e.FileCount == 0`)
-- Detection is done by checking `e.FileCount == 0` in the `OnChange` handler
-
-**Suggested Fix:**
-```markdown
-The `InputFile` component now detects when file selection is canceled. When a user opens the file picker 
-but dismisses it without selecting any files, the `OnChange` event fires with an empty file list 
-(`FileCount == 0`), allowing you to detect and respond to cancellation.
-```
-
----
-
-### 2. QuickGrid OnRowClick - MINOR CLARIFICATION
+### 1. QuickGrid OnRowClick - MINOR CLARIFICATION
 **Severity:** Low  
 **Release Notes Code Sample:**
 ```csharp
@@ -41,7 +22,7 @@ but dismisses it without selecting any files, the `OnChange` event fires with an
 
 ---
 
-### 3. IOutputCachePolicyProvider - CLARIFICATION NEEDED
+### 2. IOutputCachePolicyProvider - CLARIFICATION NEEDED
 **Severity:** Medium  
 **Release Notes Claim:**
 Shows a custom implementation taking `HttpContext` in the signature.
@@ -62,6 +43,13 @@ public interface IOutputCachePolicyProvider
 
 ---
 
+## Removed from Release Notes
+
+### InputFile Cancel Event (PR #64772)
+Originally included but determined to be a **bug fix**, not a new feature. The PR fixes handling of the browser's native `cancel` event - it now correctly triggers `OnChange` with an empty file list.
+
+---
+
 ## Features Verified Working
 
 - [x] EnvironmentBoundary component
@@ -71,7 +59,6 @@ public interface IOutputCachePolicyProvider
 - [x] RelativeToCurrentUri navigation
 - [x] GetUriWithHash() extension
 - [x] MathML namespace support
-- [x] InputFile cancel event (with corrected behavior description)
 - [x] FileContentResult in OpenAPI
 - [x] IOutputCachePolicyProvider (interface verified)
 
