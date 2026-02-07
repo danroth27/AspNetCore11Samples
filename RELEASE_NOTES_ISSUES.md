@@ -1,11 +1,87 @@
 # Release Notes Issues and Ambiguities
 
-Issues discovered while validating .NET 11 Preview 1 features against the proposed release notes.
+Issues discovered while validating .NET 11 Preview 1 features against the proposed release notes (PR #10237).
 
-## Issues Found
+## Critical Issues Found
 
-### 1. QuickGrid OnRowClick - MINOR CLARIFICATION
+### 1. IOutputCachePolicyProvider - ALL CODE SAMPLES BROKEN
+**Severity:** Critical  
+**PR Reference:** PR #10237
+
+**Issue 1 - OutputCachePolicyBuilder is internal:**
+The release notes show:
+```csharp
+new OutputCachePolicyBuilder().Expire(TimeSpan.FromMinutes(5)).Build()
+```
+But `OutputCachePolicyBuilder` has an **internal constructor** and **internal `Build()` method**. This code will NOT compile.
+
+**Issue 2 - BasePolicies and NamedPolicies are internal:**
+The updated sample shows:
+```csharp
+if (_options.Value.BasePolicies is not null)
+    return _options.Value.BasePolicies;
+if (_options.Value.NamedPolicies?.TryGetValue(policyName, out var policy) == true)
+    return ValueTask.FromResult<IOutputCachePolicy?>(policy);
+```
+But `OutputCacheOptions.BasePolicies` and `OutputCacheOptions.NamedPolicies` are **internal properties**. This code will NOT compile either.
+
+**Conclusion:** As of .NET 11 Preview 1, there is NO WAY to implement `IOutputCachePolicyProvider` that delegates to the built-in options because all required APIs are internal.
+
+---
+
+### 2. SignalR ConfigureConnection - WRONG API SHOWN
+**Severity:** High  
+**PR Reference:** PR #10237
+
+**Release Notes Show:**
+```csharp
+builder.Services.AddBlazorHub(options =>
+{
+    options.ConfigureConnection = connection =>
+    {
+        connection.ServerTimeout = TimeSpan.FromSeconds(60);
+        connection.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    };
+});
+```
+
+**Issues:**
+1. `AddBlazorHub` does NOT exist on `IServiceCollection`
+2. `ConfigureConnection` is on `ServerComponentsEndpointOptions`, not a hub options class
+3. The callback takes `Action<HttpConnectionDispatcherOptions>`, not a `HubConnection`
+4. `HttpConnectionDispatcherOptions` does NOT have `ServerTimeout`, `KeepAliveInterval`, or `HandshakeTimeout` properties
+
+**Correct API:**
+```csharp
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode(options =>
+    {
+        options.ConfigureConnection = connectionOptions =>
+        {
+            // HttpConnectionDispatcherOptions properties:
+            connectionOptions.CloseOnAuthenticationExpiration = true;
+            // etc.
+        };
+    });
+```
+
+---
+
+### 3. Docker Template - DOES NOT EXIST
+**Severity:** High  
+**PR Reference:** PR #10237
+
+**Release Notes Claim:** "The Blazor WebAssembly project template now includes Docker support out of the box."
+
+**Reality:** Running `dotnet new blazorwasm --help` shows NO Docker-related options. The generated project does NOT include a Dockerfile.
+
+---
+
+## Minor Issues
+
+### 4. QuickGrid OnRowClick - Syntax Clarification Needed
 **Severity:** Low  
+
 **Release Notes Code Sample:**
 ```csharp
 <QuickGrid Items="@people" OnRowClick="@HandleRowClick">
@@ -26,35 +102,17 @@ Issues discovered while validating .NET 11 Preview 1 features against the propos
 
 ---
 
-### 2. IOutputCachePolicyProvider - CLARIFICATION NEEDED
-**Severity:** Medium  
-**Release Notes Claim:**
-Shows a custom implementation taking `HttpContext` in the signature.
-
-**Actual Interface:**
-```csharp
-public interface IOutputCachePolicyProvider
-{
-    IReadOnlyList<IOutputCachePolicy> GetBasePolicies();
-    ValueTask<IOutputCachePolicy?> GetPolicyAsync(string policyName);
-}
-```
-
-**Notes:**
-- The interface does NOT take `HttpContext` - just the policy name
-- `OutputCacheOptions.BasePolicies` and `NamedPolicies` are internal
-- Custom implementations need to manage their own policy storage
-
----
-
 ## Removed from Release Notes
 
 ### InputFile Cancel Event (PR #64772)
-Originally included but determined to be a **bug fix**, not a new feature. The PR fixes handling of the browser's native `cancel` event - it now correctly triggers `OnChange` with an empty file list.
+Bug fix, not a new feature.
+
+### RenderFragment contravariance
+Bug fix, not a new feature.
 
 ---
 
-## Features Verified Working
+## Features Verified Working ✅
 
 - [x] EnvironmentBoundary component
 - [x] Label component  
@@ -63,20 +121,16 @@ Originally included but determined to be a **bug fix**, not a new feature. The P
 - [x] RelativeToCurrentUri navigation
 - [x] GetUriWithHash() extension
 - [x] MathML namespace support
+- [x] BasePath component (already used in BlazorFeatures App.razor)
+- [x] BL0010 analyzer
 - [x] FileContentResult in OpenAPI
-- [x] IOutputCachePolicyProvider (interface verified)
+- [x] IHostedService in Blazor WebAssembly
+- [x] Environment variables in Blazor WebAssembly configuration
 
-## Features Still To Test
+## Features Not Fully Tested
 
-- [ ] BasePath component
-- [ ] BL0010 analyzer
-- [ ] RenderFragment contravariance
-- [ ] IComponentPropertyActivator
-- [ ] SignalR ConfigureConnection
-- [ ] Improved reconnection experience
-- [ ] IHostedService in WebAssembly
-- [ ] Environment variables in WebAssembly
-- [ ] Metrics/tracing in WebAssembly
-- [ ] Docker template
-- [ ] TimeProvider in Identity
-- [ ] Auto-trust dev cert in WSL
+- [ ] IComponentPropertyActivator (advanced scenario, interface exists)
+- [ ] Improved reconnection experience (UX improvement, no API to test)
+- [ ] Metrics/tracing in WebAssembly (requires OpenTelemetry setup)
+- [ ] TimeProvider in Identity (requires Identity setup)
+- [ ] Auto-trust dev cert in WSL (requires WSL environment)
