@@ -29,41 +29,25 @@ But `OutputCacheOptions.BasePolicies` and `OutputCacheOptions.NamedPolicies` are
 
 ---
 
-### 2. SignalR ConfigureConnection - WRONG API SHOWN
-**Severity:** High  
+### 2. SignalR ConfigureConnection - ✅ NOW CORRECT
+**Severity:** Resolved  
 **PR Reference:** PR #10237
 
-**Release Notes Show:**
-```csharp
-builder.Services.AddBlazorHub(options =>
-{
-    options.ConfigureConnection = connection =>
-    {
-        connection.ServerTimeout = TimeSpan.FromSeconds(60);
-        connection.KeepAliveInterval = TimeSpan.FromSeconds(15);
-    };
-});
-```
-
-**Issues:**
-1. `AddBlazorHub` does NOT exist on `IServiceCollection`
-2. `ConfigureConnection` is on `ServerComponentsEndpointOptions`, not a hub options class
-3. The callback takes `Action<HttpConnectionDispatcherOptions>`, not a `HubConnection`
-4. `HttpConnectionDispatcherOptions` does NOT have `ServerTimeout`, `KeepAliveInterval`, or `HandshakeTimeout` properties
-
-**Correct API:**
+The SignalR `ConfigureConnection` documentation has been updated and now shows the correct API:
 ```csharp
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode(options =>
     {
-        options.ConfigureConnection = connectionOptions =>
+        options.ConfigureConnection = dispatcherOptions =>
         {
-            // HttpConnectionDispatcherOptions properties:
-            connectionOptions.CloseOnAuthenticationExpiration = true;
-            // etc.
+            dispatcherOptions.CloseOnAuthenticationExpiration = true;
+            dispatcherOptions.AllowStatefulReconnects = true;
+            dispatcherOptions.ApplicationMaxBufferSize = 1024 * 1024;
         };
     });
 ```
+
+This correctly uses `AddInteractiveServerRenderMode` with `ServerComponentsEndpointOptions` and the `HttpConnectionDispatcherOptions` callback.
 
 ---
 

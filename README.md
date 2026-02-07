@@ -53,5 +53,7 @@ See [RELEASE_NOTES_ISSUES.md](RELEASE_NOTES_ISSUES.md) for documentation issues 
 
 ### Critical Issues Found:
 1. **IOutputCachePolicyProvider** - All code samples use internal APIs (OutputCachePolicyBuilder, BasePolicies, NamedPolicies)
-2. **SignalR ConfigureConnection** - Wrong API shown (AddBlazorHub doesn't exist, wrong callback signature)
-3. **Docker Template** - Claimed Docker support doesn't exist in the template
+2. **Docker Template** - Claimed Docker support doesn't exist in the template
+
+### Resolved Issues:
+- **SignalR ConfigureConnection** - Now shows correct API using `AddInteractiveServerRenderMode`
