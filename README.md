@@ -46,14 +46,3 @@ dotnet run
 cd ApiFeatures
 dotnet run
 ```
-
-## Release Notes Issues
-
-See [RELEASE_NOTES_ISSUES.md](RELEASE_NOTES_ISSUES.md) for documentation issues found during testing.
-
-### Minor Clarification Needed:
-- **Docker Template** - Available in Visual Studio only, not via CLI
-
-### Resolved Issues:
-- **IOutputCachePolicyProvider** - Updated `TenantOutputCachePolicyProvider` sample compiles ✅
-- **SignalR ConfigureConnection** - Now shows correct API using `AddInteractiveServerRenderMode` ✅
