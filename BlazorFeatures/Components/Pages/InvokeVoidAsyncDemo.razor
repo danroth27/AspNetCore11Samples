@@ -1,10 +1,10 @@
-@page "/bl0010-analyzer"
+@page "/invoke-void-async-analyzer"
 @rendermode InteractiveServer
 @inject IJSRuntime JS
 
-<PageTitle>BL0010 Analyzer Demo</PageTitle>
+<PageTitle>InvokeVoidAsync() analyzer</PageTitle>
 
-<h1>BL0010 Analyzer</h1>
+<h1>InvokeVoidAsync() Analyzer Demo</h1>
 
 <p>The new <code>BL0010</code> analyzer recommends using <code>InvokeVoidAsync</code> instead of <code>InvokeAsync&lt;object&gt;</code> for JavaScript functions that don't return values.</p>
 
@@ -60,9 +60,7 @@ await JSRuntime.InvokeVoidAsync("console.log", "Hello");
     {
         // ⚠️ This triggers BL0010 warning in the IDE
         // The analyzer will suggest using InvokeVoidAsync instead
-#pragma warning disable BL0010
         await JS.InvokeAsync<object>("console.log", "Hello from Blazor (triggers analyzer)");
-#pragma warning restore BL0010
         result = "Called console.log using InvokeAsync<object> ⚠️ (check browser console)";
     }
 }

@@ -1,0 +1,27 @@
+@page "/navigation-features/get-uri-with-hash"
+@inject NavigationManager Navigation
+
+<PageTitle>GetUriWithHash()</PageTitle>
+
+<h1>Navigation Features</h1>
+
+<p>New navigation features in .NET 11 Preview 1.</p>
+
+<h2 id="get-uri-with-hash">GetUriWithHash()</h2>
+<p>Construct URIs with hash fragments efficiently.</p>
+
+<div class="mb-3">
+    <p><strong>URI with hash "get-uri-with-hash":</strong> @Navigation.GetUriWithHash("get-uri-with-hash")</p>
+    <p><strong>URI with hash "code-example":</strong> @Navigation.GetUriWithHash("code-example")</p>
+</div>
+
+<div class="nav nav-pills mb-3">
+    <a href="@Navigation.GetUriWithHash("get-uri-with-hash")" class="nav-link">Jump to GetUriWithHash()</a>
+    <a href="@Navigation.GetUriWithHash("code-example")" class="nav-link">Jump to Code Example</a>
+</div>
+
+<h2 id="code-example">Code Example</h2>
+<pre><code>
+// GetUriWithHash - construct URI with hash fragment
+var uri = Navigation.GetUriWithHash("section-1");
+// Results in: /current-page#section-1</code></pre>

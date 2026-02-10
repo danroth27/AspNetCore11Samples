@@ -74,13 +74,13 @@
 
     public class Product
     {
-        [System.ComponentModel.DataAnnotations.Display(Name = "Product Name")]
+        [Display(Name = "Product Name")]
         public string Name { get; set; } = "";
 
-        [System.ComponentModel.DataAnnotations.Display(Name = "Unit Price")]
+        [Display(Name = "Unit Price")]
         public decimal Price { get; set; }
 
-        [System.ComponentModel.DisplayName("Product Category")]
+        [DisplayName("Product Category")]
         public string Category { get; set; } = "";
 
         // No attribute - falls back to property name

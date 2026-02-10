@@ -4,6 +4,10 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    @*
+    Automatically render the correct base path based on the current request.
+    Resolves the href from NavigationManager.BaseUri at runtime and falls back to / if the base URI cannot be parsed.
+    *@
     <BasePath />
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />

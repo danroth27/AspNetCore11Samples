@@ -13,9 +13,8 @@ Blazor Web App (Interactive Server/WebAssembly) demonstrating new Blazor compone
 - **QuickGrid OnRowClick** - Row click event handling
 - **Navigation Features** - `RelativeToCurrentUri` and `GetUriWithHash()`
 - **MathML Support** - Proper MathML namespace in interactive rendering
-- **BL0010 Analyzer** - JSInterop best practices analyzer
+- **InvokeVoidAsync() Analyzer** - JSInterop best practices analyzer
 - **BasePath Component** - Dynamic base path for Blazor Web Apps
-- **SignalR ConfigureConnection** - Connection-level SignalR configuration
 
 ### BlazorWasmFeatures
 Standalone Blazor WebAssembly app demonstrating WASM-specific features:
@@ -27,22 +26,7 @@ Standalone Blazor WebAssembly app demonstrating WASM-specific features:
 Web API demonstrating framework features:
 
 - **FileContentResult in OpenAPI** - Proper binary file schema documentation
-- **Output Caching** - Named cache policies with IOutputCachePolicyProvider
 
 ## Running the Samples
 
 Requires .NET 11 Preview 1 SDK (11.0.100-preview.1.26104.118).
-
-```bash
-# Blazor Web App Features
-cd BlazorFeatures/BlazorFeatures
-dotnet run
-
-# Blazor WebAssembly Features
-cd BlazorWasmFeatures
-dotnet run
-
-# API Features
-cd ApiFeatures
-dotnet run
-```

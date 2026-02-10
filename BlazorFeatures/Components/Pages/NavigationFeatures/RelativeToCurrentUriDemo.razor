@@ -1,0 +1,47 @@
+@page "/navigation-features/relative-to-current-uri"
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+
+<PageTitle>RelativeToCurrentUri</PageTitle>
+
+<h1>Navigation Features</h1>
+
+<p>New navigation features in .NET 11 Preview 1.</p>
+
+<h2 id="relativetocurrenturi">RelativeToCurrentUri</h2>
+<p>Navigate to URIs relative to the current page path instead of the app's base URI.</p>
+
+
+<div class="btn-group mb-3">
+    <button class="btn btn-primary" @onclick="NavigateToOverview">
+        Navigate to "overview" (relative)
+    </button>
+    <button class="btn btn-secondary" @onclick="NavigateToGetUriWithHash">
+        Navigate to "get-uri-with-hash" (relative)
+    </button>
+</div>
+
+<h3>NavLink with RelativeToCurrentUri</h3>
+<nav class="nav nav-pills mb-3">
+    <NavLink href="overview" RelativeToCurrentUri="true" class="nav-link">Overview</NavLink>
+    <NavLink href="get-uri-with-hash" RelativeToCurrentUri="true" class="nav-link">GetUriWithHash()</NavLink>
+</nav>
+
+<h2>Code Example</h2>
+<pre><code>// RelativeToCurrentUri - navigate relative to current page
+Navigation.NavigateTo("overview", new NavigationOptions
+{
+    RelativeToCurrentUri = true
+});</code></pre>
+
+@code {
+    private void NavigateToOverview()
+    {
+        Navigation.NavigateTo("overview", new NavigationOptions { RelativeToCurrentUri = true });
+    }
+
+    private void NavigateToGetUriWithHash()
+    {
+        Navigation.NavigateTo("get-uri-with-hash", new NavigationOptions { RelativeToCurrentUri = true });
+    }
+}

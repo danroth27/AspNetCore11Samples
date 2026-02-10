@@ -10,11 +10,11 @@
 
 <h2>Demo</h2>
 
-<QuickGrid TGridItem="Person" Items="@people.AsQueryable()" OnRowClick="@HandleRowClick">
-    <PropertyColumn Property="@(p => p.Id)" />
-    <PropertyColumn Property="@(p => p.Name)" />
-    <PropertyColumn Property="@(p => p.Email)" />
-    <PropertyColumn Property="@(p => p.Department)" />
+<QuickGrid TGridItem="Person" Items="people.AsQueryable()" OnRowClick="HandleRowClick">
+    <PropertyColumn Property="p => p.Id" />
+    <PropertyColumn Property="p => p.Name" />
+    <PropertyColumn Property="p => p.Email" />
+    <PropertyColumn Property="p => p.Department" />
 </QuickGrid>
 
 @if (selectedPerson is not null)
@@ -33,9 +33,9 @@ else
 }
 
 <h2>Code</h2>
-<pre><code>&lt;QuickGrid Items="@@people.AsQueryable()" OnRowClick="@@HandleRowClick"&gt;
-    &lt;PropertyColumn Property="@@(p => p.Name)" /&gt;
-    &lt;PropertyColumn Property="@@(p => p.Email)" /&gt;
+<pre><code>&lt;QuickGrid TGridItem="Person" Items="people.AsQueryable()" OnRowClick="HandleRowClick"&gt;
+    &lt;PropertyColumn Property="p => p.Name" /&gt;
+    &lt;PropertyColumn Property="p => p.Email" /&gt;
 &lt;/QuickGrid&gt;
 
 @@code {

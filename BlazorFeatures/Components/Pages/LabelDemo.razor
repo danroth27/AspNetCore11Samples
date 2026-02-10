@@ -53,16 +53,16 @@
 
     public class Product
     {
-        [System.ComponentModel.DataAnnotations.Display(Name = "Product Name")]
+        [Display(Name = "Product Name")]
         public string Name { get; set; } = "";
 
-        [System.ComponentModel.DataAnnotations.Display(Name = "Unit Price", Description = "Price in USD")]
+        [Display(Name = "Unit Price", Description = "Price in USD")]
         public decimal Price { get; set; }
 
-        [System.ComponentModel.DataAnnotations.Display(Name = "Release Date")]
+        [Display(Name = "Release Date")]
         public DateTime ReleaseDate { get; set; } = DateTime.Today;
 
-        [System.ComponentModel.DisplayName("Product Description")]
+        [DisplayName("Product Description")]
         public string Description { get; set; } = "";
     }
 }

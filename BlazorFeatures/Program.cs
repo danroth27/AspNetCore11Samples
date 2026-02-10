@@ -1,5 +1,4 @@
 using BlazorFeatures.Components;
-using BlazorFeatures.Services;
 using Microsoft.AspNetCore.Components;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,17 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
-// =============================================================================
-// FEATURE: IComponentPropertyActivator for custom property injection
-// Register a custom property activator that logs all property injections.
-// This replaces the default property injection behavior for all components.
-// =============================================================================
-builder.Services.AddSingleton<IComponentPropertyActivator, LoggingPropertyActivator>();
-
-// Register a sample service to demonstrate injection logging
-builder.Services.AddScoped<ISampleService, SampleService>();
-builder.Services.AddKeyedScoped<ISampleService, PremiumSampleService>("premium");
 
 var app = builder.Build();
 
@@ -34,30 +22,8 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-// =============================================================================
-// FEATURE: SignalR ConfigureConnection
-// The new ConfigureConnection option on ServerComponentsEndpointOptions allows
-// configuring HttpConnectionDispatcherOptions for the SignalR connection.
-// NOTE: The release notes code sample is INCORRECT. The actual API:
-// - Is on AddInteractiveServerRenderMode, not AddBlazorHub
-// - Takes Action<HttpConnectionDispatcherOptions>, not a HubConnection callback
-// - Configures transport options, auth data, and connection-level settings
-// =============================================================================
+
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode(options =>
-    {
-        options.ConfigureConnection = connectionOptions =>
-        {
-            // Configure HTTP connection dispatcher options
-            // Available options include:
-            // - CloseOnAuthenticationExpiration
-            // - Transports (WebSockets, LongPolling, ServerSentEvents)
-            // - TransportMaxBufferSize
-            // - ApplicationMaxBufferSize
-            // - AuthorizationData
-            // - MinimumProtocolVersion
-            connectionOptions.CloseOnAuthenticationExpiration = true;
-        };
-    });
+    .AddInteractiveServerRenderMode();
 
 app.Run();

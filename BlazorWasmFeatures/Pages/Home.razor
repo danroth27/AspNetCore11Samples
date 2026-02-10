@@ -1,7 +1,84 @@
 ﻿@page "/"
+@using BlazorWasmFeatures.Services
+@inject DataRefreshService RefreshService
+@inject IConfiguration Configuration
+@implements IDisposable
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>.NET 11 Preview 1 Blazor WebAssembly Features</h1>
 
-Welcome to your new app.
+<div class="card mb-4">
+    <div class="card-header">
+        <h2>IHostedService Support</h2>
+    </div>
+    <div class="card-body">
+        <p>
+            Blazor WebAssembly now supports <code>IHostedService</code> for running background services in the browser.
+            The <code>DataRefreshService</code> is running in the background and refreshes every 3 seconds.
+        </p>
+        <div class="alert alert-info">
+            <strong>Refresh Count:</strong> @refreshCount
+        </div>
+        <p class="text-muted">
+            Check the browser console to see the background service logs.
+        </p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h2>Environment Variables in Configuration</h2>
+    </div>
+    <div class="card-body">
+        <p>
+            Blazor WebAssembly can now access environment variables through <code>IConfiguration</code>.
+        </p>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Configuration Key</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>API_ENDPOINT</code></td>
+                    <td>@if (Configuration["API_ENDPOINT"] is { } apiEndpoint) { @apiEndpoint } else { <em>Not configured</em> }</td>
+                </tr>
+                <tr>
+                    <td><code>ENABLE_FEATURE_X</code></td>
+                    <td>@if (Configuration["ENABLE_FEATURE_X"] is { } enableFeature) { @enableFeature } else { <em>Not configured</em> }</td>
+                </tr>
+                <tr>
+                    <td><code>Logging:LogLevel:Default</code></td>
+                    <td>@if (Configuration["Logging:LogLevel:Default"] is { } logLevel) { @logLevel } else { <em>Not configured</em> }</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="text-muted">
+            Environment variables are loaded alongside <code>appsettings.json</code> configuration.
+        </p>
+    </div>
+</div>
+
+@code {
+    private int refreshCount = 0;
+
+    protected override void OnInitialized()
+    {
+        refreshCount = RefreshService.RefreshCount;
+        RefreshService.OnRefresh += HandleRefresh;
+    }
+
+    private void HandleRefresh()
+    {
+        refreshCount = RefreshService.RefreshCount;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        RefreshService.OnRefresh -= HandleRefresh;
+    }
+}

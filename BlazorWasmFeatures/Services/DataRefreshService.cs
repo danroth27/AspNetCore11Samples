@@ -24,8 +24,8 @@ public class DataRefreshService : IHostedService, IDisposable
     {
         Console.WriteLine("[DataRefreshService] Starting background service...");
         
-        // Refresh every 10 seconds for demo purposes
-        _timer = new Timer(RefreshData, null, TimeSpan.Zero, TimeSpan.FromSeconds(10));
+        // Refresh every 3 seconds for demo purposes
+        _timer = new Timer(RefreshData, null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
         
         return Task.CompletedTask;
     }
