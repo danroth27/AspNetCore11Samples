@@ -1,0 +1,85 @@
+@page "/tempdata-demo"
+@inject NavigationManager NavigationManager
+
+<PageTitle>TempData Demo</PageTitle>
+
+<h1>TempData for Blazor SSR</h1>
+
+<p>TempData provides a way to store data that persists across HTTP requests, ideal for flash messages and POST-Redirect-GET patterns.</p>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-success alert-dismissible" role="alert">
+        @message
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(peekedValue))
+{
+    <div class="alert alert-info" role="alert">
+        <strong>Peeked value (not consumed):</strong> @peekedValue
+    </div>
+}
+
+<h2>Set TempData</h2>
+<form method="post" @formname="set-tempdata" @onsubmit="HandleSetTempData">
+    <AntiforgeryToken />
+    <div class="mb-3">
+        <label class="form-label">Message</label>
+        <input type="text" class="form-control" @bind="inputMessage" />
+    </div>
+    <button type="submit" class="btn btn-primary me-2">Set &amp; Redirect (Get)</button>
+</form>
+
+<h2>Peek TempData</h2>
+<form method="post" @formname="peek-tempdata" @onsubmit="HandlePeek">
+    <AntiforgeryToken />
+    <button type="submit" class="btn btn-outline-secondary me-2">Peek (keeps value)</button>
+</form>
+
+<h2>Keep TempData</h2>
+<form method="post" @formname="keep-tempdata" @onsubmit="HandleKeep">
+    <AntiforgeryToken />
+    <button type="submit" class="btn btn-outline-warning me-2">Keep All</button>
+</form>
+
+<h3>How it works</h3>
+<ul>
+    <li><code>TempData["key"] = value</code> — stores a value</li>
+    <li><code>TempData.Get("key")</code> — reads and removes (one-time use)</li>
+    <li><code>TempData.Peek("key")</code> — reads without removing</li>
+    <li><code>TempData.Keep()</code> — retains all values for the next request</li>
+</ul>
+
+@code {
+    [CascadingParameter]
+    public ITempData? TempData { get; set; }
+
+    private string? message;
+    private string? peekedValue;
+    private string inputMessage = "Hello from TempData!";
+
+    protected override void OnInitialized()
+    {
+        // Get removes the value after reading
+        message = TempData?.Get("Message") as string;
+    }
+
+    private void HandleSetTempData()
+    {
+        TempData!["Message"] = inputMessage;
+        NavigationManager.NavigateTo("/tempdata-demo", forceLoad: true);
+    }
+
+    private void HandlePeek()
+    {
+        // Peek reads without removing - value available on next request too
+        peekedValue = TempData?.Peek("Message") as string ?? "(no value set)";
+    }
+
+    private void HandleKeep()
+    {
+        TempData?.Keep();
+        message = "All TempData values retained for the next request.";
+    }
+}

@@ -1,0 +1,56 @@
+@page "/label-interactive-demo"
+@rendermode InteractiveServer
+
+<PageTitle>Label ID in Interactive Mode</PageTitle>
+
+<h1>Label <code>id</code> Attribute in Interactive Mode</h1>
+
+<p>In Preview 2, the <code>id</code> attribute for input components is correctly generated in interactive render mode, enabling proper label/input association.</p>
+
+<p>Inspect the rendered HTML to verify that each <code>&lt;input&gt;</code> has a generated <code>id</code> attribute matching the <code>&lt;label&gt;</code>'s <code>for</code> attribute.</p>
+
+<EditForm Model="contact" FormName="label-id-form">
+    <div class="mb-3">
+        <Label For="() => contact.FirstName" class="form-label" />
+        <InputText @bind-Value="contact.FirstName" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <Label For="() => contact.LastName" class="form-label" />
+        <InputText @bind-Value="contact.LastName" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <Label For="() => contact.Email" class="form-label" />
+        <InputText @bind-Value="contact.Email" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <Label For="() => contact.Age" class="form-label" />
+        <InputNumber @bind-Value="contact.Age" class="form-control" />
+    </div>
+</EditForm>
+
+<h2>What to verify</h2>
+<ul>
+    <li>Open browser DevTools and inspect the form elements</li>
+    <li>Each <code>&lt;label&gt;</code> should have a <code>for</code> attribute</li>
+    <li>Each <code>&lt;input&gt;</code> should have a matching <code>id</code> attribute</li>
+    <li>This works because Preview 2 generates <code>id</code> independently of <code>name</code>, which is empty in interactive mode</li>
+</ul>
+
+@code {
+    private ContactModel contact = new();
+
+    public class ContactModel
+    {
+        [Display(Name = "First Name")]
+        public string FirstName { get; set; } = "";
+
+        [Display(Name = "Last Name")]
+        public string LastName { get; set; } = "";
+
+        [Display(Name = "Email Address")]
+        public string Email { get; set; } = "";
+
+        [Display(Name = "Age")]
+        public int Age { get; set; }
+    }
+}

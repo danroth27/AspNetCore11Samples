@@ -2,4 +2,5 @@
   <Project Path="ApiFeatures/ApiFeatures.csproj" />
   <Project Path="BlazorFeatures/BlazorFeatures.csproj" />
   <Project Path="BlazorWasmFeatures/BlazorWasmFeatures.csproj" />
+  <Project Path="WebWorkerDemo/WebWorkerDemo.csproj" />
 </Solution>
