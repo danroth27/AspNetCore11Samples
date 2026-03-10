@@ -8,7 +8,11 @@ using OpenTelemetry.Trace;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddOpenApi();
+// Preview 2: OpenAPI 3.2 support
+builder.Services.AddOpenApi(options =>
+{
+    options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_2;
+});
 builder.Services.AddValidation();
 
 // Preview 2: Native OTEL tracing - ASP.NET Core now adds semantic convention tags to HTTP activity by default
