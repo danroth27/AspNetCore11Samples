@@ -9,46 +9,32 @@
 
 @if (!string.IsNullOrEmpty(message))
 {
-    <div class="alert alert-success alert-dismissible" role="alert">
+    <div class="alert alert-success" role="alert">
         @message
     </div>
 }
 
-@if (!string.IsNullOrEmpty(peekedValue))
-{
-    <div class="alert alert-info" role="alert">
-        <strong>Peeked value (not consumed):</strong> @peekedValue
-    </div>
-}
-
-<h2>Set TempData</h2>
-<form method="post" @formname="set-tempdata" @onsubmit="HandleSetTempData">
+<form method="post" @formname="set-tempdata" @onsubmit="HandleSubmit">
     <AntiforgeryToken />
     <div class="mb-3">
         <label class="form-label">Message</label>
-        <input type="text" class="form-control" @bind="inputMessage" />
+        <input type="text" class="form-control" name="InputMessage" value="@InputMessage" />
     </div>
-    <button type="submit" class="btn btn-primary me-2">Set &amp; Redirect (Get)</button>
-</form>
 
-<h2>Peek TempData</h2>
-<form method="post" @formname="peek-tempdata" @onsubmit="HandlePeek">
-    <AntiforgeryToken />
-    <button type="submit" class="btn btn-outline-secondary me-2">Peek (keeps value)</button>
-</form>
+    <h2>Flash Message (Get)</h2>
+    <button type="submit" name="Action" value="flash" class="btn btn-primary">Set &amp; Redirect</button>
+    <p class="text-muted mt-1">Sets TempData and redirects. The message appears once, then is gone on refresh.</p>
 
-<h2>Keep TempData</h2>
-<form method="post" @formname="keep-tempdata" @onsubmit="HandleKeep">
-    <AntiforgeryToken />
-    <button type="submit" class="btn btn-outline-warning me-2">Keep All</button>
+    <h2>Multi-Page Flow (Peek)</h2>
+    <button type="submit" name="Action" value="multi" class="btn btn-outline-info">Set &amp; Go to Confirmation Page →</button>
+    <p class="text-muted mt-1">Sets TempData and redirects to a confirmation page that uses <code>Peek</code> to display the value without consuming it. You can then navigate back here and the value is still available.</p>
 </form>
 
 <h3>How it works</h3>
 <ul>
-    <li><code>TempData["key"] = value</code> — stores a value</li>
-    <li><code>TempData.Get("key")</code> — reads and removes (one-time use)</li>
-    <li><code>TempData.Peek("key")</code> — reads without removing</li>
-    <li><code>TempData.Keep()</code> — retains all values for the next request</li>
+    <li><code>TempData.Get("key")</code> — reads and <strong>removes</strong> (one-time use, ideal for flash messages)</li>
+    <li><code>TempData.Peek("key")</code> — reads <strong>without removing</strong> (ideal for intermediate pages in a multi-step flow)</li>
+    <li><code>TempData.Keep()</code> — retains all values for the next request (ideal when you read a value but still need it later)</li>
 </ul>
 
 @code {
@@ -56,30 +42,29 @@
     public ITempData? TempData { get; set; }
 
     private string? message;
-    private string? peekedValue;
-    private string inputMessage = "Hello from TempData!";
+
+    [SupplyParameterFromForm(FormName = "set-tempdata")]
+    private string? InputMessage { get; set; } = "Hello from TempData!";
+
+    [SupplyParameterFromForm(FormName = "set-tempdata")]
+    private string? Action { get; set; }
 
     protected override void OnInitialized()
     {
-        // Get removes the value after reading
+        // Workaround for https://github.com/dotnet/aspnetcore/issues/65720:
+        // trigger lazy loading before calling Get()
+        _ = TempData?.ContainsKey("Message");
+
+        // Get reads and removes the value (one-time use)
         message = TempData?.Get("Message") as string;
     }
 
-    private void HandleSetTempData()
+    private void HandleSubmit()
     {
-        TempData!["Message"] = inputMessage;
-        NavigationManager.NavigateTo("/tempdata-demo", forceLoad: true);
-    }
-
-    private void HandlePeek()
-    {
-        // Peek reads without removing - value available on next request too
-        peekedValue = TempData?.Peek("Message") as string ?? "(no value set)";
-    }
-
-    private void HandleKeep()
-    {
-        TempData?.Keep();
-        message = "All TempData values retained for the next request.";
+        TempData!["Message"] = InputMessage;
+        if (Action == "multi")
+            NavigationManager.NavigateTo("/tempdata-confirm");
+        else
+            NavigationManager.NavigateTo("/tempdata-demo");
     }
 }

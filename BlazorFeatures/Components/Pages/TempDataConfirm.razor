@@ -1,0 +1,37 @@
+@page "/tempdata-confirm"
+@inject NavigationManager NavigationManager
+
+<PageTitle>TempData Confirmation</PageTitle>
+
+<h1>Confirmation Page</h1>
+
+<p>This page uses <code>TempData.Peek()</code> to display the message <strong>without consuming it</strong>.</p>
+
+@if (!string.IsNullOrEmpty(peekedValue))
+{
+    <div class="alert alert-info" role="alert">
+        <strong>Peeked value:</strong> @peekedValue
+    </div>
+    <p class="text-muted">Because we used <code>Peek</code>, the value is still in TempData. Navigate back and it will still be there.</p>
+}
+else
+{
+    <div class="alert alert-secondary" role="alert">
+        <em>No TempData value found. <a href="/tempdata-demo">Go set one first.</a></em>
+    </div>
+}
+
+<a href="/tempdata-demo" class="btn btn-outline-primary">← Back to TempData Demo (value still available)</a>
+
+@code {
+    [CascadingParameter]
+    public ITempData? TempData { get; set; }
+
+    private string? peekedValue;
+
+    protected override void OnInitialized()
+    {
+        // Peek reads without consuming — value survives for the next page
+        peekedValue = TempData?.Peek("Message") as string;
+    }
+}
