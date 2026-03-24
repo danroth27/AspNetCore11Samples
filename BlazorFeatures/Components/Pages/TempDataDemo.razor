@@ -1,0 +1,70 @@
+@page "/tempdata-demo"
+@inject NavigationManager NavigationManager
+
+<PageTitle>TempData Demo</PageTitle>
+
+<h1>TempData for Blazor SSR</h1>
+
+<p>TempData provides a way to store data that persists across HTTP requests, ideal for flash messages and POST-Redirect-GET patterns.</p>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-success" role="alert">
+        @message
+    </div>
+}
+
+<form method="post" @formname="set-tempdata" @onsubmit="HandleSubmit">
+    <AntiforgeryToken />
+    <div class="mb-3">
+        <label class="form-label">Message</label>
+        <input type="text" class="form-control" name="InputMessage" value="@InputMessage" />
+    </div>
+
+    <h2>Flash Message (Get)</h2>
+    <button type="submit" name="Action" value="flash" class="btn btn-primary">Set &amp; Redirect</button>
+    <p class="text-muted mt-1">Sets TempData and redirects. The message appears once, then is gone on refresh.</p>
+
+    <h2>Multi-Page Flow (Peek)</h2>
+    <button type="submit" name="Action" value="multi" class="btn btn-outline-info">Set &amp; Go to Confirmation Page →</button>
+    <p class="text-muted mt-1">Sets TempData and redirects to a confirmation page that uses <code>Peek</code> to display the value without consuming it. You can then navigate back here and the value is still available.</p>
+</form>
+
+<h3>How it works</h3>
+<ul>
+    <li><code>TempData.Get("key")</code> — reads and <strong>removes</strong> (one-time use, ideal for flash messages)</li>
+    <li><code>TempData.Peek("key")</code> — reads <strong>without removing</strong> (ideal for intermediate pages in a multi-step flow)</li>
+    <li><code>TempData.Keep()</code> — retains all values for the next request (ideal when you read a value but still need it later)</li>
+</ul>
+
+@code {
+    [CascadingParameter]
+    public ITempData? TempData { get; set; }
+
+    private string? message;
+
+    [SupplyParameterFromForm(FormName = "set-tempdata")]
+    private string? InputMessage { get; set; } = "Hello from TempData!";
+
+    [SupplyParameterFromForm(FormName = "set-tempdata")]
+    private string? Action { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // Workaround for https://github.com/dotnet/aspnetcore/issues/65720:
+        // trigger lazy loading before calling Get()
+        _ = TempData?.ContainsKey("Message");
+
+        // Get reads and removes the value (one-time use)
+        message = TempData?.Get("Message") as string;
+    }
+
+    private void HandleSubmit()
+    {
+        TempData!["Message"] = InputMessage;
+        if (Action == "multi")
+            NavigationManager.NavigateTo("/tempdata-confirm");
+        else
+            NavigationManager.NavigateTo("/tempdata-demo");
+    }
+}

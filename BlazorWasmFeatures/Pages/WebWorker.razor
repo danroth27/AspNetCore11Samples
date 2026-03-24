@@ -1,0 +1,187 @@
+@page "/web-worker"
+@using WebWorkerDemo
+@using System.Diagnostics
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<PageTitle>Web Worker Demo</PageTitle>
+
+<h1>.NET Web Worker</h1>
+
+<p>
+    This demo offloads CPU-intensive data analysis to a
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API" target="_blank">Web Worker</a>
+    running a separate .NET runtime, keeping the UI thread responsive.
+</p>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h2>UI Responsiveness Check</h2>
+    </div>
+    <div class="card-body">
+        <p>This counter keeps ticking every 100ms. If the UI thread is blocked, it freezes.</p>
+        <div class="alert alert-info">
+            <strong>Counter:</strong> @counter
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h2>JSON Processing</h2>
+    </div>
+    <div class="card-body">
+        <p>Generate a large dataset of sales records, then analyze it on the main thread or on a Web Worker.</p>
+
+        <div class="mb-3">
+            <label class="form-label">Number of records</label>
+            <select class="form-select w-auto" @bind="recordCount">
+                <option value="50000">50,000</option>
+                <option value="100000">100,000</option>
+                <option value="250000">250,000</option>
+            </select>
+        </div>
+
+        <div class="d-flex gap-2 mb-3">
+            <button class="btn btn-danger" @onclick="ProcessOnMainThread" disabled="@isProcessing">
+                Process on Main Thread
+            </button>
+            <button class="btn btn-success" @onclick="ProcessOnWorker" disabled="@(isProcessing || workerClient is null)">
+                Process on Web Worker
+            </button>
+        </div>
+
+        @if (workerClient is null)
+        {
+            <p class="text-muted"><em>Initializing Web Worker...</em></p>
+        }
+
+        @if (isProcessing)
+        {
+            <div class="d-flex align-items-center gap-2">
+                <div class="spinner-border spinner-border-sm" role="status"></div>
+                <span>Processing @recordCount.ToString("N0") records@(processLocation is not null ? $" on {processLocation}" : "")...</span>
+            </div>
+        }
+
+        @if (result is not null)
+        {
+            <div class="alert @(usedWorker ? "alert-success" : "alert-warning") mt-3">
+                <strong>Processed on @(usedWorker ? "Web Worker" : "Main Thread")</strong> in @elapsedMs ms
+                @if (!usedWorker)
+                {
+                    <br /><small class="text-muted">Notice how the counter froze during processing!</small>
+                }
+            </div>
+
+            <table class="table table-bordered">
+                <tbody>
+                    <tr><th>Total Records</th><td>@result.TotalRecords.ToString("N0")</td></tr>
+                    <tr><th>Total Revenue</th><td>$@result.TotalRevenue.ToString("N2")</td></tr>
+                    <tr><th>Average Order Value</th><td>$@result.AverageOrderValue.ToString("N2")</td></tr>
+                </tbody>
+            </table>
+
+            <h5>Revenue by Region</h5>
+            <table class="table table-sm table-striped">
+                <thead><tr><th>Region</th><th>Orders</th><th>Revenue</th></tr></thead>
+                <tbody>
+                    @foreach (var region in result.RegionBreakdown)
+                    {
+                        <tr><td>@region.Region</td><td>@region.Orders.ToString("N0")</td><td>$@region.Revenue.ToString("N2")</td></tr>
+                    }
+                </tbody>
+            </table>
+
+            <h5>Top 5 Products</h5>
+            <table class="table table-sm table-striped">
+                <thead><tr><th>Product</th><th>Revenue</th></tr></thead>
+                <tbody>
+                    @foreach (var product in result.TopProducts)
+                    {
+                        <tr><td>@product.Product</td><td>$@product.Revenue.ToString("N2")</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private WebWorkerClient? workerClient;
+    private Timer? counterTimer;
+    private int counter;
+    private int recordCount = 100000;
+    private bool isProcessing;
+    private string? processLocation;
+    private bool usedWorker;
+    private long elapsedMs;
+    private SalesAnalysis? result;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            counterTimer = new Timer(_ =>
+            {
+                counter++;
+                InvokeAsync(StateHasChanged);
+            }, null, 0, 100);
+
+            try
+            {
+                workerClient = await WebWorkerClient.CreateAsync(JSRuntime);
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to create worker: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task ProcessOnMainThread()
+    {
+        isProcessing = true;
+        usedWorker = false;
+        processLocation = "Main Thread";
+        result = null;
+        StateHasChanged();
+        await Task.Yield();
+
+        var sw = Stopwatch.StartNew();
+
+        // This blocks the UI thread — counter freezes!
+        result = DataWorker.AnalyzeSalesDataLocal(recordCount);
+
+        sw.Stop();
+        elapsedMs = sw.ElapsedMilliseconds;
+        isProcessing = false;
+    }
+
+    private async Task ProcessOnWorker()
+    {
+        isProcessing = true;
+        usedWorker = true;
+        processLocation = "Web Worker";
+        result = null;
+        StateHasChanged();
+
+        var sw = Stopwatch.StartNew();
+
+        // This runs entirely on the worker thread — UI stays responsive!
+        result = await workerClient!.InvokeAsync<SalesAnalysis>(
+            "BlazorWasmFeatures.DataWorker.AnalyzeSalesData", [recordCount]);
+
+        sw.Stop();
+        elapsedMs = sw.ElapsedMilliseconds;
+        isProcessing = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        counterTimer?.Dispose();
+        if (workerClient is not null)
+            await workerClient.DisposeAsync();
+    }
+}
