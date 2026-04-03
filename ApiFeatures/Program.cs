@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Preview 2: OpenAPI 3.2 support
 builder.Services.AddOpenApi(options =>
 {
+    // OpenAPI 3.2 also enables the HTTP QUERY method (Preview 3)
     options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_2;
 });
 builder.Services.AddValidation();
@@ -25,6 +26,11 @@ builder.Services.AddOpenTelemetry()
             .AddConsoleExporter();
     });
 
+// Zstd (Zstandard) compression is now a default provider in Preview 3.
+// Default priority: zstd > br > gzip
+builder.Services.AddResponseCompression();
+builder.Services.AddRequestDecompression();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -33,6 +39,8 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseRequestDecompression();
+app.UseResponseCompression();
 app.UseHttpsRedirection();
 
 var summaries = new[]
@@ -101,6 +109,51 @@ app.MapPost("/validate/wrapper", (JsonWrapper wrapper) =>
 })
 .WithName("ValidateWrapper");
 
+// HTTP QUERY method: like GET but with a request body for complex searches.
+// Enabled by OpenAPI 3.2 support added in Preview 2, with QUERY routing in Preview 3.
+app.MapMethods("/search", ["QUERY"], (SearchRequest request) =>
+{
+    // Simulated search results filtered by the request body
+    var allProducts = new[]
+    {
+        new { Id = 1, Name = "Laptop", Category = "Electronics", Price = 999.99 },
+        new { Id = 2, Name = "Headphones", Category = "Electronics", Price = 79.99 },
+        new { Id = 3, Name = "Coffee Maker", Category = "Kitchen", Price = 49.99 },
+        new { Id = 4, Name = "Standing Desk", Category = "Furniture", Price = 599.99 },
+        new { Id = 5, Name = "Keyboard", Category = "Electronics", Price = 129.99 },
+    };
+
+    var results = allProducts.AsEnumerable();
+
+    if (!string.IsNullOrEmpty(request.Query))
+        results = results.Where(p => p.Name.Contains(request.Query, StringComparison.OrdinalIgnoreCase));
+
+    if (request.Categories is { Length: > 0 })
+        results = results.Where(p => request.Categories.Contains(p.Category, StringComparer.OrdinalIgnoreCase));
+
+    if (request.MaxPrice.HasValue)
+        results = results.Where(p => p.Price <= request.MaxPrice.Value);
+
+    return Results.Ok(new { Total = results.Count(), Results = results });
+})
+.WithName("SearchProducts")
+.WithDescription("Search products using an HTTP QUERY request body");
+
+// Large payload endpoint useful for testing zstd compression.
+app.MapGet("/large-payload", () =>
+{
+    var items = Enumerable.Range(1, 1000).Select(i => new
+    {
+        Id = i,
+        Name = $"Item {i}",
+        Description = $"This is a detailed description for item {i} that adds enough content to demonstrate compression benefits.",
+        Tags = new[] { "tag-a", "tag-b", $"tag-{i % 10}" }
+    });
+    return Results.Ok(items);
+})
+.WithName("GetLargePayload")
+.WithDescription("Returns a large JSON payload to demonstrate zstd/br/gzip response compression");
+
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
@@ -125,3 +178,5 @@ class JsonWrapper
 
     public JsonElement Data { get; set; }
 }
+
+record SearchRequest(string? Query, string[]? Categories, double? MaxPrice);

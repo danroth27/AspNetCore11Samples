@@ -1,13 +1,51 @@
 @ApiFeatures_HostAddress = http://localhost:5091
 
 #if (EnableOpenAPI)
+### OpenAPI document (v3.2 with QUERY support)
 GET {{ApiFeatures_HostAddress}}/openapi/v1.json
 Accept: application/json
 
 ###
 #endif
 
+### Weather forecast
 GET {{ApiFeatures_HostAddress}}/weatherforecast/
 Accept: application/json
+
+###
+
+### HTTP QUERY method - search with a request body
+QUERY {{ApiFeatures_HostAddress}}/search
+Content-Type: application/json
+
+{
+  "query": "key",
+  "categories": ["Electronics"],
+  "maxPrice": 200
+}
+
+###
+
+### HTTP QUERY method - all electronics
+QUERY {{ApiFeatures_HostAddress}}/search
+Content-Type: application/json
+
+{
+  "categories": ["Electronics"]
+}
+
+###
+
+### Large payload (test response compression with Accept-Encoding: zstd)
+GET {{ApiFeatures_HostAddress}}/large-payload
+Accept: application/json
+Accept-Encoding: zstd, br, gzip
+
+###
+
+### Large payload (gzip only for comparison)
+GET {{ApiFeatures_HostAddress}}/large-payload
+Accept: application/json
+Accept-Encoding: gzip
 
 ###
