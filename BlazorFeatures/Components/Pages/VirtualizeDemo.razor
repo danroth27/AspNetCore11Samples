@@ -1,0 +1,64 @@
+@page "/virtualize-demo"
+@rendermode InteractiveServer
+
+<PageTitle>Variable-Height Virtualization</PageTitle>
+
+<h1>Variable-Height Virtualization</h1>
+
+<p>The <code>Virtualize</code> component now supports items with variable heights — no fixed <code>ItemSize</code> parameter needed. It measures actual item heights and uses a walking average to estimate off-screen items.</p>
+
+<h2>10,000 items with varying content</h2>
+
+<div style="height: 500px; overflow-y: auto; border: 2px solid #dee2e6; border-radius: 8px; padding: 8px;">
+    <Virtualize Items="items" Context="item">
+        <div class="card mb-2">
+            <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-start">
+                    <strong>Item #@item.Id</strong>
+                    <span class="badge @item.BadgeClass">@item.Category</span>
+                </div>
+                <p class="mb-0 mt-1 text-muted" style="font-size: 0.9em;">@item.Description</p>
+            </div>
+        </div>
+    </Virtualize>
+</div>
+
+@code {
+    private List<DemoItem> items = new();
+
+    protected override void OnInitialized()
+    {
+        var rng = new Random(42);
+        var categories = new[] { "Short", "Medium", "Long", "Extra Long" };
+
+        for (int i = 0; i < 10_000; i++)
+        {
+            var category = categories[rng.Next(categories.Length)];
+            var description = category switch
+            {
+                "Short" => $"Brief note #{i}.",
+                "Medium" => string.Join(" ", Enumerable.Range(0, 3)
+                    .Select(_ => $"This is a medium-length paragraph for item #{i} with additional context.")),
+                "Long" => string.Join(" ", Enumerable.Range(0, 8)
+                    .Select(_ => $"This is a longer paragraph for item #{i}, demonstrating variable heights.")),
+                "Extra Long" => string.Join(" ", Enumerable.Range(0, 15)
+                    .Select(_ => $"Item #{i} has a lot of content, showing extreme height variance in the virtualized list.")),
+                _ => ""
+            };
+
+            items.Add(new DemoItem(i, category, description));
+        }
+    }
+
+    record DemoItem(int Id, string Category, string Description)
+    {
+        public string BadgeClass => Category switch
+        {
+            "Short" => "bg-success",
+            "Medium" => "bg-info",
+            "Long" => "bg-warning text-dark",
+            "Extra Long" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}
