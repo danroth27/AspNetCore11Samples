@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using OpenTelemetry.Trace;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,8 +27,21 @@ builder.Services.AddOpenTelemetry()
             .AddConsoleExporter();
     });
 
+// Disable throw-on-bad-request so the Preview 4 endpoint-filter sample below
+// can observe the framework's 400 status (rather than seeing the dev-exception
+// page intercept a thrown BadHttpRequestException).
+builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(o =>
+{
+    o.ThrowOnBadRequest = false;
+});
+
 // Zstd (Zstandard) compression is now a default provider in Preview 3.
 // Default priority: zstd > br > gzip
+//
+// Preview 4 (#55092): Response compression middleware now ALWAYS emits
+// Vary: Accept-Encoding when compression is enabled, even when the response
+// itself isn't compressed. This prevents shared caches/CDNs from serving
+// the wrong encoding to a client that didn't ask for it.
 builder.Services.AddResponseCompression();
 builder.Services.AddRequestDecompression();
 
@@ -49,22 +63,36 @@ var summaries = new[]
 };
 
 // OpenAPI now properly documents file download endpoints
+// Preview 4 (#64562): FileContentHttpResult / FileStreamHttpResult / FileStreamResult
+// are described as binary string schemas (`type: string, format: binary`) in
+// generated OpenAPI documents when annotated with .Produces<...>().
 app.MapGet("/download/pdf", () =>
 {
     var content = System.Text.Encoding.UTF8.GetBytes("%PDF-1.4 Sample PDF Content");
     return TypedResults.File(content, "application/pdf", "document.pdf");
 })
+.Produces<FileContentHttpResult>(contentType: "application/pdf")
 .WithName("DownloadPdf")
-.WithDescription("Downloads a sample PDF file")
-.Produces<FileContentResult>(contentType: "application/pdf");
+.WithDescription("Returns a FileContentHttpResult — described as { type: string, format: binary } in OpenAPI");
 
 app.MapGet("/download/image", () =>
 {
     var pngBytes = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
     return TypedResults.File(pngBytes, "image/png", "image.png");
 })
+.Produces<FileContentHttpResult>(contentType: "image/png")
 .WithName("DownloadImage")
-.Produces<FileContentResult>(contentType: "image/png");
+.WithDescription("Returns a FileContentHttpResult");
+
+app.MapGet("/download/stream", () =>
+{
+    var content = System.Text.Encoding.UTF8.GetBytes("Streamed text content");
+    var stream = new MemoryStream(content);
+    return TypedResults.Stream(stream, "text/plain", "stream.txt");
+})
+.Produces<FileStreamHttpResult>(contentType: "text/plain")
+.WithName("DownloadStream")
+.WithDescription("Returns a FileStreamHttpResult — newly supported in Preview 4 (#64562)");
 
 app.MapGet("/weatherforecast", () =>
 {
@@ -153,6 +181,38 @@ app.MapGet("/large-payload", () =>
 })
 .WithName("GetLargePayload")
 .WithDescription("Returns a large JSON payload to demonstrate zstd/br/gzip response compression");
+
+// Preview 4 (#64539): Endpoint filters can observe parameter-binding failures.
+//
+// Without a filter, a TryParse failure on a route value short-circuits with 400
+// before the delegate runs. With an endpoint filter (or filter factory) attached,
+// the filter pipeline now runs even when binding fails, so the filter can read
+// the framework's 400 status code and substitute its own response body.
+//
+// Try: GET /items/abc                                  -> 400 with the filter-supplied JSON body
+//      GET /items/12345678-1234-1234-1234-123456789abc -> 200 with the item
+// Note: we accept any string segment in the route ("/items/{id}") and let the
+// Guid parameter binder do the parsing, so a non-Guid like "abc" reaches the
+// param-check failure path (not a 404 from a routing constraint).
+app.MapGet("/items/{id}", (Guid id) => Results.Ok(new { id, name = "demo" }))
+    .AddEndpointFilterFactory((_, next) => async ctx =>
+    {
+        // Run the rest of the pipeline first; the framework will set
+        // Response.StatusCode = 400 if binding failed (PR #64539).
+        var result = await next(ctx);
+        if (ctx.HttpContext.Response.StatusCode == StatusCodes.Status400BadRequest)
+        {
+            return Results.Json(new
+            {
+                error = "Parameter binding failed (intercepted by endpoint filter)",
+                detail = "Preview 4 (#64539): the filter pipeline now runs even when " +
+                         "TryParse-style parameter binding fails. Pass a valid GUID for {id}.",
+            }, statusCode: StatusCodes.Status400BadRequest);
+        }
+        return result;
+    })
+    .WithName("GetItem")
+    .WithDescription("Demonstrates Preview 4: endpoint filters observe parameter-binding failures");
 
 app.Run();
 

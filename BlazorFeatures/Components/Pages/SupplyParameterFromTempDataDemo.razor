@@ -1,0 +1,49 @@
+@page "/tempdata"
+@using Microsoft.AspNetCore.Components.Forms
+@inject NavigationManager Nav
+
+<PageTitle>SupplyParameterFromTempData demo</PageTitle>
+
+<h1>[SupplyParameterFromTempData] (Preview 4)</h1>
+
+<p>
+    A new <code>[SupplyParameterFromTempData]</code> attribute reads and writes
+    TempData values directly on a Blazor SSR component property — same shape as
+    <code>[SupplyParameterFromQuery]</code> and <code>[SupplyParameterFromForm]</code>.
+    Handy for status messages that need to survive a redirect-after-post
+    (<a href="https://github.com/dotnet/aspnetcore/pull/65306">#65306</a>).
+</p>
+
+@if (!string.IsNullOrEmpty(StatusMessage))
+{
+    <div class="alert alert-success" role="alert">
+        <strong>Status from TempData:</strong> @StatusMessage
+    </div>
+}
+
+<EditForm Model="this" FormName="save-greeting" OnValidSubmit="HandleSubmit" method="post">
+    <button class="btn btn-primary" type="submit">
+        Save greeting (POST + redirect)
+    </button>
+</EditForm>
+
+<p class="text-muted mt-3">
+    Click the button. The handler writes a status string to TempData via the
+    <code>[SupplyParameterFromTempData]</code> property and redirects back to
+    <code>/tempdata</code>. On the next render the attribute populates
+    <code>StatusMessage</code> from TempData.
+</p>
+
+@code {
+    [SupplyParameterFromTempData]
+    public string? StatusMessage { get; set; }
+
+    private void HandleSubmit()
+    {
+        // Setting a property marked [SupplyParameterFromTempData] writes through
+        // to TempData so the next request can read it.
+        StatusMessage = $"Greeting saved at {DateTimeOffset.Now:T}";
+        Nav.NavigateTo("/tempdata");
+    }
+}
+

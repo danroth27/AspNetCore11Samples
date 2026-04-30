@@ -7,6 +7,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Required for [SupplyParameterFromTempData] in Blazor SSR (Preview 4 #65306).
+// TempData uses cookie-based storage by default; the controller services
+// register the ITempDataProvider that the new attribute reads from.
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

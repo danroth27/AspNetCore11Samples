@@ -7,7 +7,18 @@
 
 <p>The <code>Virtualize</code> component now supports items with variable heights — no fixed <code>ItemSize</code> parameter needed. It measures actual item heights and uses a walking average to estimate off-screen items.</p>
 
-<h2>10,000 items with varying content</h2>
+<div class="mb-3">
+    <button class="btn btn-primary me-2" @onclick="PrependItems">Prepend 100 Items</button>
+    <button class="btn btn-outline-secondary me-2" @onclick="ExpandItemsAbove">Expand items above viewport</button>
+    <span class="text-muted">Total: @items.Count items</span>
+</div>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info py-2">@statusMessage</div>
+}
+
+<h2>Scroll down, then click a button above — viewport should stay stable</h2>
 
 <div style="height: 500px; overflow-y: auto; border: 2px solid #dee2e6; border-radius: 8px; padding: 8px;">
     <Virtualize Items="items" Context="item">
@@ -25,6 +36,8 @@
 
 @code {
     private List<DemoItem> items = new();
+    private string? statusMessage;
+    private int nextPrependId = -1;
 
     protected override void OnInitialized()
     {
@@ -34,23 +47,59 @@
         for (int i = 0; i < 10_000; i++)
         {
             var category = categories[rng.Next(categories.Length)];
-            var description = category switch
-            {
-                "Short" => $"Brief note #{i}.",
-                "Medium" => string.Join(" ", Enumerable.Range(0, 3)
-                    .Select(_ => $"This is a medium-length paragraph for item #{i} with additional context.")),
-                "Long" => string.Join(" ", Enumerable.Range(0, 8)
-                    .Select(_ => $"This is a longer paragraph for item #{i}, demonstrating variable heights.")),
-                "Extra Long" => string.Join(" ", Enumerable.Range(0, 15)
-                    .Select(_ => $"Item #{i} has a lot of content, showing extreme height variance in the virtualized list.")),
-                _ => ""
-            };
-
-            items.Add(new DemoItem(i, category, description));
+            items.Add(new DemoItem(i, category, MakeDescription(i, category), false));
         }
     }
 
-    record DemoItem(int Id, string Category, string Description)
+    private void PrependItems()
+    {
+        // Insert 100 new items at the top. With PR #65951, the viewport stays stable.
+        // Without it, visible items shift down by the height of the prepended items.
+        var newItems = new List<DemoItem>();
+        for (int i = 0; i < 100; i++)
+        {
+            newItems.Add(new DemoItem(nextPrependId--, "Medium",
+                $"[PREPENDED] This is a newly inserted item. If the viewport stayed stable, PR #65951 is included.", false));
+        }
+        items.InsertRange(0, newItems);
+        statusMessage = $"Prepended 100 items (total: {items.Count}). If you were scrolled down and nothing jumped, viewport stability (PR #65951) is working!";
+    }
+
+    private void ExpandItemsAbove()
+    {
+        // Expand the first 20 items to have much more content. With PR #65951,
+        // items currently in view should not shift when above-viewport items grow.
+        int expanded = 0;
+        for (int i = 0; i < Math.Min(20, items.Count); i++)
+        {
+            if (!items[i].Expanded)
+            {
+                items[i] = items[i] with
+                {
+                    Category = "Extra Long",
+                    Description = string.Join(" ", Enumerable.Range(0, 20)
+                        .Select(_ => $"[EXPANDED] Item #{items[i].Id} now has significantly more content to test height-change stability.")),
+                    Expanded = true
+                };
+                expanded++;
+            }
+        }
+        statusMessage = $"Expanded {expanded} items above. If you were scrolled past item #20 and nothing jumped, viewport stability is working!";
+    }
+
+    private static string MakeDescription(int id, string category) => category switch
+    {
+        "Short" => $"Brief note #{id}.",
+        "Medium" => string.Join(" ", Enumerable.Range(0, 3)
+            .Select(_ => $"This is a medium-length paragraph for item #{id} with additional context.")),
+        "Long" => string.Join(" ", Enumerable.Range(0, 8)
+            .Select(_ => $"This is a longer paragraph for item #{id}, demonstrating variable heights.")),
+        "Extra Long" => string.Join(" ", Enumerable.Range(0, 15)
+            .Select(_ => $"Item #{id} has a lot of content, showing extreme height variance in the virtualized list.")),
+        _ => ""
+    };
+
+    record DemoItem(int Id, string Category, string Description, bool Expanded)
     {
         public string BadgeClass => Category switch
         {
