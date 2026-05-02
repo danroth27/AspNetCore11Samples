@@ -1,0 +1,106 @@
+@page "/virtualize-anchor"
+@rendermode InteractiveServer
+
+<PageTitle>Virtualize AnchorMode</PageTitle>
+
+<h1>Virtualize <code>AnchorMode</code> + <code>ItemComparer</code></h1>
+
+<p>
+    Preview 4 adds two new <code>Virtualize&lt;TItem&gt;</code> parameters
+    (<a href="https://github.com/dotnet/aspnetcore/pull/66521">#66521</a>):
+</p>
+<ul>
+    <li><code>AnchorMode</code> — pin the visible viewport to the
+        <em>first visible item</em> (<code>Beginning</code>) or the
+        <em>last visible item</em> (<code>End</code>) when items are
+        prepended/appended. Defaults to <code>None</code>.</li>
+    <li><code>ItemComparer</code> — used to identify "the same logical item"
+        across renders so the anchor survives list mutations.</li>
+</ul>
+
+<p>
+    Try it: scroll down a few hundred items, then click a button. With
+    <code>AnchorMode="Beginning"</code> the viewport should stay locked to
+    the item you were looking at. With <code>AnchorMode="None"</code> the
+    viewport visually jumps when items are prepended.
+</p>
+
+<div class="mb-3">
+    <label class="me-2"><strong>AnchorMode:</strong></label>
+    <select @bind="anchorMode" class="form-select d-inline-block w-auto">
+        <option value="@VirtualizeAnchorMode.None">None (default — prepend jumps)</option>
+        <option value="@VirtualizeAnchorMode.Beginning">Beginning (anchor first visible)</option>
+        <option value="@VirtualizeAnchorMode.End">End (anchor last visible)</option>
+    </select>
+</div>
+
+<div class="mb-3">
+    <button class="btn btn-primary me-2" @onclick="Prepend100">Prepend 100 items</button>
+    <button class="btn btn-secondary me-2" @onclick="Append100">Append 100 items</button>
+    <span class="text-muted">Total: @items.Count</span>
+</div>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info py-2">@statusMessage</div>
+}
+
+<div style="height: 500px; overflow-y: auto; border: 2px solid #dee2e6; border-radius: 8px; padding: 8px;">
+    <Virtualize Items="items" Context="item"
+                AnchorMode="anchorMode"
+                ItemComparer="ItemIdComparer.Instance">
+        <div class="card mb-2">
+            <div class="card-body py-2 px-3">
+                <strong>Item #@item.Id</strong>
+                <span class="text-muted ms-2">@item.Description</span>
+            </div>
+        </div>
+    </Virtualize>
+</div>
+
+@code {
+    private List<DemoItem> items = new();
+    private VirtualizeAnchorMode anchorMode = VirtualizeAnchorMode.Beginning;
+    private string? statusMessage;
+    private int nextPrependId = -1;
+    private int nextAppendId = 10_000;
+
+    protected override void OnInitialized()
+    {
+        for (int i = 0; i < 10_000; i++)
+        {
+            items.Add(new DemoItem(i, $"Original item {i}."));
+        }
+    }
+
+    private void Prepend100()
+    {
+        var newItems = new List<DemoItem>();
+        for (int i = 0; i < 100; i++)
+        {
+            newItems.Add(new DemoItem(nextPrependId--, "[PREPENDED]"));
+        }
+        items.InsertRange(0, newItems);
+        statusMessage = $"Prepended 100 items. AnchorMode={anchorMode}. Total={items.Count}.";
+    }
+
+    private void Append100()
+    {
+        for (int i = 0; i < 100; i++)
+        {
+            items.Add(new DemoItem(nextAppendId++, "[APPENDED]"));
+        }
+        statusMessage = $"Appended 100 items. AnchorMode={anchorMode}. Total={items.Count}.";
+    }
+
+    private record DemoItem(int Id, string Description);
+
+    // Identify "same logical item" across renders by Id only — the description
+    // can change without breaking the anchor.
+    private sealed class ItemIdComparer : IEqualityComparer<DemoItem>
+    {
+        public static readonly ItemIdComparer Instance = new();
+        public bool Equals(DemoItem? x, DemoItem? y) => x?.Id == y?.Id;
+        public int GetHashCode(DemoItem obj) => obj.Id;
+    }
+}

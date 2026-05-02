@@ -1,5 +1,7 @@
+using BlazorFeatures;
 using BlazorFeatures.Components;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Server.Circuits;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +13,11 @@ builder.Services.AddRazorComponents()
 // TempData uses cookie-based storage by default; the controller services
 // register the ITempDataProvider that the new attribute reads from.
 builder.Services.AddControllers();
+
+// Register the CircuitHandler used by /circuit-pause to capture a
+// Circuit reference for Circuit.RequestCircuitPauseAsync (Preview 4 #66265).
+builder.Services.AddScoped<CircuitTrackingHandler>();
+builder.Services.AddScoped<CircuitHandler>(sp => sp.GetRequiredService<CircuitTrackingHandler>());
 
 var app = builder.Build();
 

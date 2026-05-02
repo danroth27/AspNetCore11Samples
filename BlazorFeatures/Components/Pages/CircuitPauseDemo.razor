@@ -1,0 +1,85 @@
+@page "/circuit-pause"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Server.Circuits
+@using BlazorFeatures
+@inject CircuitTrackingHandler Tracker
+
+<PageTitle>Server-initiated circuit pause</PageTitle>
+
+<h1>Server-initiated circuit pause</h1>
+
+<p>
+    Preview 4 adds <code>Circuit.RequestCircuitPauseAsync</code>
+    (<a href="https://github.com/dotnet/aspnetcore/pull/66265">#66265</a>),
+    a server-side API that asks the connected Blazor client to begin the
+    graceful circuit-pause flow. Until now, pause was only triggered by
+    client-side navigation — this is the programmatic path operators
+    can use to drain circuits during deployments or rebalancing.
+</p>
+
+<p>To get a <code>Circuit</code> reference, implement a <code>CircuitHandler</code>
+   and capture it in <code>OnConnectionUpAsync</code>.</p>
+
+<p>Circuit ID: <code id="circuit-id">@(Tracker.CurrentCircuit?.Id ?? "(no active circuit)")</code></p>
+<p>Active circuits: <strong>@CircuitTrackingHandler.ActiveCircuits.Count</strong></p>
+
+<button class="btn btn-warning" @onclick="PauseSelf" disabled="@(_busy || Tracker.CurrentCircuit is null)">
+    Pause this circuit
+</button>
+<button class="btn btn-danger ms-2" @onclick="PauseAll" disabled="@_busy">
+    Pause all active circuits
+</button>
+
+@if (!string.IsNullOrEmpty(_message))
+{
+    <div class="alert alert-info mt-3">@_message</div>
+}
+
+@code {
+    private bool _busy;
+    private string? _message;
+
+    private async Task PauseSelf()
+    {
+        _busy = true;
+        try
+        {
+            var circuit = Tracker.CurrentCircuit;
+            if (circuit is null)
+            {
+                _message = "No active circuit captured yet — wait for OnConnectionUpAsync to fire.";
+                return;
+            }
+
+            var accepted = await circuit.RequestCircuitPauseAsync();
+            _message = accepted
+                ? $"Pause request accepted for {circuit.Id}. The client should disconnect shortly."
+                : $"Pause request rejected for {circuit.Id} (already disposed, not initialized, or disconnected).";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task PauseAll()
+    {
+        _busy = true;
+        try
+        {
+            int accepted = 0, rejected = 0;
+            foreach (var circuit in CircuitTrackingHandler.ActiveCircuits)
+            {
+                if (await circuit.RequestCircuitPauseAsync())
+                    accepted++;
+                else
+                    rejected++;
+            }
+            _message = $"Drain summary: accepted={accepted}, rejected={rejected}.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}
