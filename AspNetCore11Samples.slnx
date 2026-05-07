@@ -1,6 +1,7 @@
 <Solution>
   <Project Path="ApiFeatures/ApiFeatures.csproj" />
   <Project Path="BlazorFeatures/BlazorFeatures.csproj" />
+  <Project Path="BlazorFeatures.E2E.Tests/BlazorFeatures.E2E.Tests.csproj" />
   <Project Path="BlazorWasmFeatures/BlazorWasmFeatures.csproj" />
   <Project Path="WebWorkerDemo/WebWorkerDemo.csproj" />
 </Solution>
