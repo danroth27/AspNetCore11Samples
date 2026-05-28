@@ -1,6 +1,7 @@
 @page "/web-worker"
 @using WebWorkerDemo
 @using System.Diagnostics
+@using System.Text.Json
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
@@ -170,8 +171,11 @@
         var sw = Stopwatch.StartNew();
 
         // This runs entirely on the worker thread — UI stays responsive!
-        result = await workerClient!.InvokeAsync<SalesAnalysis>(
+        // DataWorker.AnalyzeSalesData returns JSON (since [JSExport] can only return primitives/strings),
+        // so we deserialize it on the main thread.
+        var json = await workerClient!.InvokeAsync<string>(
             "BlazorWasmFeatures.DataWorker.AnalyzeSalesData", [recordCount]);
+        result = JsonSerializer.Deserialize<SalesAnalysis>(json);
 
         sw.Stop();
         elapsedMs = sw.ElapsedMilliseconds;
