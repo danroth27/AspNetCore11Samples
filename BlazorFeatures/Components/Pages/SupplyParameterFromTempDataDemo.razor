@@ -14,10 +14,10 @@
     (<a href="https://github.com/dotnet/aspnetcore/pull/65306">#65306</a>).
 </p>
 
-@if (!string.IsNullOrEmpty(StatusMessage))
+@if (!string.IsNullOrEmpty(displayedStatus))
 {
     <div class="alert alert-success" role="alert">
-        <strong>Status from TempData:</strong> @StatusMessage
+        <strong>Status from TempData:</strong> @displayedStatus
     </div>
 }
 
@@ -37,6 +37,19 @@
 @code {
     [SupplyParameterFromTempData]
     public string? StatusMessage { get; set; }
+
+    private string? displayedStatus;
+
+    protected override void OnInitialized()
+    {
+        // [SupplyParameterFromTempData] is two-way: the property is populated from
+        // TempData (Get() semantics, marks for deletion) on the first read, but at
+        // end of request the framework persists the property's *current* value back
+        // into TempData. For a one-shot flash message, capture the incoming value
+        // and null the property so the persist write-back doesn't restore it.
+        displayedStatus = StatusMessage;
+        StatusMessage = null;
+    }
 
     private void HandleSubmit()
     {
