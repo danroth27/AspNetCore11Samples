@@ -18,25 +18,26 @@
     zero extra setup. EnableClientValidation is true by default; show it
     explicitly here for the demo.
 *@
+<div class="form-card">
 <EditForm Model="contact" Enhance OnValidSubmit="HandleSubmit" FormName="ContactForm">
     <DataAnnotationsValidator EnableClientValidation="true" />
 
     <fieldset disabled="@submitted">
         <div class="form-group">
             <label for="name">@L["LabelName"]</label>
-            <InputText id="name" @bind-Value="contact!.Name" />
+            <InputText id="name" class="form-control" @bind-Value="contact!.Name" />
             <ValidationMessage For="() => contact!.Name" />
         </div>
 
         <div class="form-group">
             <label for="email">@L["LabelEmail"]</label>
-            <InputText id="email" @bind-Value="contact!.Email" />
+            <InputText id="email" class="form-control" @bind-Value="contact!.Email" />
             <ValidationMessage For="() => contact!.Email" />
         </div>
 
         <div class="form-group">
             <label for="message">@L["LabelMessage"]</label>
-            <InputTextArea id="message" @bind-Value="contact!.Message" rows="4" />
+            <InputTextArea id="message" class="form-control" @bind-Value="contact!.Message" rows="4" />
             <ValidationMessage For="() => contact!.Message" />
         </div>
 
@@ -51,6 +52,7 @@
         <p>@L["ContactSuccessMessage"]</p>
     </div>
 }
+</div>
 
 @code {
     [SupplyParameterFromForm]

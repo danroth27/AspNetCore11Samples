@@ -24,13 +24,14 @@
       - editContext.IsValidationPending(() => field) drives the spinner and
         editContext.IsValidationFaulted(() => field) surfaces handler exceptions.
 *@
+<div class="form-card">
 <EditForm EditContext="editContext" OnSubmit="HandleSubmit">
     <DataAnnotationsValidator />
 
     <fieldset disabled="@(submitting || submittedSuccessfully)">
         <div class="form-group">
             <label for="username">@L["Username"]</label>
-            <InputText id="username" @bind-Value="model.Username" placeholder="@L["UsernamePlaceholder"]" />
+            <InputText id="username" class="form-control" @bind-Value="model.Username" placeholder="@L["UsernamePlaceholder"]" />
             @if (editContext.IsValidationPending(() => model.Username))
             {
                 <div class="field-status pending">@L["CheckingMessage"]</div>
@@ -51,7 +52,7 @@
 
         <div class="form-group">
             <label for="email">@L["Email"]</label>
-            <InputText id="email" @bind-Value="model.Email" placeholder="@L["EmailPlaceholder"]" />
+            <InputText id="email" class="form-control" @bind-Value="model.Email" placeholder="@L["EmailPlaceholder"]" />
             @if (editContext.IsValidationPending(() => model.Email))
             {
                 <div class="field-status pending">@L["CheckingMessage"]</div>
@@ -72,7 +73,7 @@
 
         <div class="form-group">
             <label for="age">@L["Age"]</label>
-            <InputNumber id="age" @bind-Value="model.Age" placeholder="@L["AgePlaceholder"]" />
+            <InputNumber id="age" class="form-control" @bind-Value="model.Age" placeholder="@L["AgePlaceholder"]" />
             <ValidationMessage For="() => model.Age" />
         </div>
 
@@ -80,7 +81,7 @@
             <label for="website">
                 @L["Website"] <span class="optional-label">@L["OptionalLabel"]</span>
             </label>
-            <InputText id="website" @bind-Value="model.Website" placeholder="@L["WebsitePlaceholder"]" />
+            <InputText id="website" class="form-control" @bind-Value="model.Website" placeholder="@L["WebsitePlaceholder"]" />
             <ValidationMessage For="() => model.Website" />
         </div>
 
@@ -107,6 +108,7 @@
         <ValidationSummary />
     </fieldset>
 </EditForm>
+</div>
 
 @code {
     private RegistrationModel model = new();
@@ -114,19 +116,38 @@
     private ValidationMessageStore messages = default!;
     private bool submitting;
     private bool submittedSuccessfully;
+    private bool fieldHandlerSubscribed;
 
     protected override void OnInitialized()
     {
         editContext = new EditContext(model);
         messages = new ValidationMessageStore(editContext);
-        editContext.OnFieldChanged += OnFieldChanged;
         editContext.OnValidationStateChanged += OnValidationStateChanged;
         editContext.OnValidationRequestedAsync += OnValidationRequestedAsync;
     }
 
+    // Subscribe to OnFieldChanged *after* the first render so that the
+    // <DataAnnotationsValidator /> child component has already subscribed its
+    // own handler. Event handlers fire in subscription order, and DataAnnotationsValidator
+    // calls EditContext.AddValidationTask on every field change (PR #66526). If our
+    // handler ran first, DataAnnotationsValidator's later AddValidationTask call would
+    // cancel our CTS. By subscribing last, our AddValidationTask supersedes its task
+    // (which silently returns on OperationCanceledException) and our async result wins.
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && !fieldHandlerSubscribed)
+        {
+            editContext.OnFieldChanged += OnFieldChanged;
+            fieldHandlerSubscribed = true;
+        }
+    }
+
     public void Dispose()
     {
-        editContext.OnFieldChanged -= OnFieldChanged;
+        if (fieldHandlerSubscribed)
+        {
+            editContext.OnFieldChanged -= OnFieldChanged;
+        }
         editContext.OnValidationStateChanged -= OnValidationStateChanged;
         editContext.OnValidationRequestedAsync -= OnValidationRequestedAsync;
     }
@@ -173,8 +194,17 @@
             return;
         }
 
-        var taken = await check(value, ct);
-        ct.ThrowIfCancellationRequested();
+        bool taken;
+        try
+        {
+            taken = await check(value, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Superseded by a newer edit for this field; let the latest task win.
+            return;
+        }
+
         if (taken)
         {
             messages.Add(field, L[errorKey]);

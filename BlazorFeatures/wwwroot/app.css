@@ -58,3 +58,122 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* ---- Demo form styling (shared by AsyncValidationDemo + ClientValidationDemo) ---- */
+
+.form-card {
+    max-width: 560px;
+    margin: 1rem 0 2rem;
+    padding: 1.75rem 1.75rem 1.5rem;
+    background: #fff;
+    border: 1px solid #e3e6ea;
+    border-radius: 10px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.form-card .form-group {
+    margin-bottom: 1.1rem;
+}
+
+.form-card label {
+    display: block;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.35rem;
+}
+
+.form-card .optional-label {
+    font-weight: 400;
+    color: #6b7280;
+    font-size: 0.85em;
+    margin-left: 0.25rem;
+}
+
+.form-card .form-control {
+    border-radius: 6px;
+    border: 1px solid #cbd2da;
+    padding: 0.55rem 0.75rem;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.form-card .form-control:focus {
+    border-color: #1b6ec2;
+    box-shadow: 0 0 0 0.2rem rgba(27, 110, 194, 0.15);
+}
+
+.form-card textarea.form-control {
+    resize: vertical;
+    min-height: 6rem;
+}
+
+.form-card .btn-primary {
+    padding: 0.55rem 1.4rem;
+    font-weight: 500;
+}
+
+.form-card fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Async validation field-status chips */
+.field-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.4rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.field-status::before {
+    display: inline-block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    content: "";
+}
+
+.field-status.pending {
+    background: #fff8e1;
+    color: #8a6d00;
+}
+
+.field-status.pending::before {
+    background: #f0b400;
+    animation: pulse-dot 1s ease-in-out infinite;
+}
+
+.field-status.valid {
+    background: #e7f6ec;
+    color: #1b7a3a;
+}
+
+.field-status.valid::before {
+    background: #2ea64b;
+}
+
+.field-status.faulted {
+    background: #fdecea;
+    color: #a31515;
+}
+
+.field-status.faulted::before {
+    background: #e50000;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+/* Tighter spacing for the culture switcher above a form-card */
+.culture-switcher {
+    margin-bottom: 0.75rem;
+    color: #4b5563;
+    font-size: 0.9rem;
+}
