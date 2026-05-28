@@ -1,0 +1,219 @@
+@page "/async-validation"
+@rendermode InteractiveServer
+@using System.Linq.Expressions
+@using BlazorFeatures.Data
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Localization
+@inject IStringLocalizer<BlazorFeatures.Resources.ValidationMessages> L
+@inject UserService Users
+@implements IDisposable
+
+<PageTitle>@L["RegisterPageTitle"]</PageTitle>
+
+<h1>@L["RegisterFormTitle"]</h1>
+
+<CultureSwitcher />
+
+@*
+    Interactive Server form using the new async validation pipeline (PR #66526):
+      - OnFieldChanged triggers a per-field async check that registers via
+        EditContext.AddValidationTask(field, task, cts). The framework tracks
+        pending/faulted state and supersedes prior tasks for the same field.
+      - OnValidationRequestedAsync runs the same checks on submit so a user who
+        never blurred the field still gets validated.
+      - editContext.IsValidationPending(() => field) drives the spinner and
+        editContext.IsValidationFaulted(() => field) surfaces handler exceptions.
+*@
+<EditForm EditContext="editContext" OnSubmit="HandleSubmit">
+    <DataAnnotationsValidator />
+
+    <fieldset disabled="@(submitting || submittedSuccessfully)">
+        <div class="form-group">
+            <label for="username">@L["Username"]</label>
+            <InputText id="username" @bind-Value="model.Username" placeholder="@L["UsernamePlaceholder"]" />
+            @if (editContext.IsValidationPending(() => model.Username))
+            {
+                <div class="field-status pending">@L["CheckingMessage"]</div>
+            }
+            else if (editContext.IsValidationFaulted(() => model.Username))
+            {
+                <div class="field-status faulted">@L["FaultedMessage"]</div>
+            }
+            else if (IsValidatedAvailable(() => model.Username))
+            {
+                <div class="field-status valid">@L["AvailableMessage"]</div>
+            }
+            else
+            {
+                <ValidationMessage For="() => model.Username" />
+            }
+        </div>
+
+        <div class="form-group">
+            <label for="email">@L["Email"]</label>
+            <InputText id="email" @bind-Value="model.Email" placeholder="@L["EmailPlaceholder"]" />
+            @if (editContext.IsValidationPending(() => model.Email))
+            {
+                <div class="field-status pending">@L["CheckingMessage"]</div>
+            }
+            else if (editContext.IsValidationFaulted(() => model.Email))
+            {
+                <div class="field-status faulted">@L["FaultedMessage"]</div>
+            }
+            else if (IsValidatedAvailable(() => model.Email))
+            {
+                <div class="field-status valid">@L["AvailableMessage"]</div>
+            }
+            else
+            {
+                <ValidationMessage For="() => model.Email" />
+            }
+        </div>
+
+        <div class="form-group">
+            <label for="age">@L["Age"]</label>
+            <InputNumber id="age" @bind-Value="model.Age" placeholder="@L["AgePlaceholder"]" />
+            <ValidationMessage For="() => model.Age" />
+        </div>
+
+        <div class="form-group">
+            <label for="website">
+                @L["Website"] <span class="optional-label">@L["OptionalLabel"]</span>
+            </label>
+            <InputText id="website" @bind-Value="model.Website" placeholder="@L["WebsitePlaceholder"]" />
+            <ValidationMessage For="() => model.Website" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            @if (submitting)
+            {
+                <text>@L["SubmittingButton"]</text>
+            }
+            else if (submittedSuccessfully)
+            {
+                <text>@L["SubmittedSuccessfullyButton"]</text>
+            }
+            else
+            {
+                <text>@L["RegisterSubmitButton"]</text>
+            }
+        </button>
+
+        @if (submittedSuccessfully)
+        {
+            <div class="alert alert-success mt-3">@L["RegisterSuccessMessage"]</div>
+        }
+
+        <ValidationSummary />
+    </fieldset>
+</EditForm>
+
+@code {
+    private RegistrationModel model = new();
+    private EditContext editContext = default!;
+    private ValidationMessageStore messages = default!;
+    private bool submitting;
+    private bool submittedSuccessfully;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(model);
+        messages = new ValidationMessageStore(editContext);
+        editContext.OnFieldChanged += OnFieldChanged;
+        editContext.OnValidationStateChanged += OnValidationStateChanged;
+        editContext.OnValidationRequestedAsync += OnValidationRequestedAsync;
+    }
+
+    public void Dispose()
+    {
+        editContext.OnFieldChanged -= OnFieldChanged;
+        editContext.OnValidationStateChanged -= OnValidationStateChanged;
+        editContext.OnValidationRequestedAsync -= OnValidationRequestedAsync;
+    }
+
+    private void OnValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
+        => InvokeAsync(StateHasChanged);
+
+    // Per-field async uniqueness check fired on edit. AddValidationTask makes the
+    // framework cancel any prior pending task for the same field and surface this
+    // task's pending/faulted state via EditContext.IsValidationPending/Faulted.
+    private void OnFieldChanged(object? sender, FieldChangedEventArgs e)
+    {
+        if (e.FieldIdentifier.FieldName == nameof(model.Username))
+        {
+            ScheduleUniquenessCheck(e.FieldIdentifier, model.Username, Users.IsUsernameTakenAsync, "UniqueUsernameError");
+        }
+        else if (e.FieldIdentifier.FieldName == nameof(model.Email))
+        {
+            ScheduleUniquenessCheck(e.FieldIdentifier, model.Email, Users.IsEmailTakenAsync, "UniqueEmailError");
+        }
+    }
+
+    private void ScheduleUniquenessCheck(
+        FieldIdentifier field,
+        string value,
+        Func<string, CancellationToken, Task<bool>> check,
+        string errorKey)
+    {
+        var cts = new CancellationTokenSource();
+        var task = RunCheckAsync(field, value, check, errorKey, cts.Token);
+        editContext.AddValidationTask(field, task, cts);
+    }
+
+    private async Task RunCheckAsync(
+        FieldIdentifier field,
+        string value,
+        Func<string, CancellationToken, Task<bool>> check,
+        string errorKey,
+        CancellationToken ct)
+    {
+        messages.Clear(field);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        var taken = await check(value, ct);
+        ct.ThrowIfCancellationRequested();
+        if (taken)
+        {
+            messages.Add(field, L[errorKey]);
+        }
+        editContext.NotifyValidationStateChanged();
+    }
+
+    // Submit-time guard: re-check both fields and let ValidateAsync await everything.
+    private Task OnValidationRequestedAsync(object? sender, ValidationRequestedEventArgs e)
+    {
+        var userField = FieldIdentifier.Create(() => model.Username);
+        var emailField = FieldIdentifier.Create(() => model.Email);
+        ScheduleUniquenessCheck(userField, model.Username, Users.IsUsernameTakenAsync, "UniqueUsernameError");
+        ScheduleUniquenessCheck(emailField, model.Email, Users.IsEmailTakenAsync, "UniqueEmailError");
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleSubmit()
+    {
+        submitting = true;
+        submittedSuccessfully = false;
+        StateHasChanged();
+        try
+        {
+            submittedSuccessfully = await editContext.ValidateAsync();
+        }
+        finally
+        {
+            submitting = false;
+        }
+    }
+
+    private bool IsValidatedAvailable<T>(Expression<Func<T>> accessor)
+    {
+        var field = FieldIdentifier.Create(accessor);
+        return !submitting
+            && editContext.IsModified(field)
+            && !editContext.IsValidationPending(field)
+            && !editContext.IsValidationFaulted(field)
+            && !editContext.GetValidationMessages(field).Any();
+    }
+}

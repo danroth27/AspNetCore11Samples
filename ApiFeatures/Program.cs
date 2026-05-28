@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using OpenTelemetry.Trace;
@@ -44,6 +45,24 @@ builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(o =
 // the wrong encoding to a client that didn't ask for it.
 builder.Services.AddResponseCompression();
 builder.Services.AddRequestDecompression();
+
+// Preview 5 (#66249): Kestrel applies RequestHeadersTimeout to fragmented HTTP/2 and
+// HTTP/3 trailer HEADERS frames. Before P5, only the initial request HEADERS used the
+// timeout — a peer that started a trailer block but never finished it could keep a
+// stream open until the connection-level timeout fired. The same option now covers both.
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(10);
+});
+
+// Preview 5 (#66228): Non-body enum parameters keep their C# names in OpenAPI schemas
+// even when a JsonStringEnumConverter naming policy is configured here, because the
+// framework binds query/route/header/form enums via Enum.TryParse (not JSON).
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(
+        new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower));
+});
 
 var app = builder.Build();
 
@@ -214,7 +233,50 @@ app.MapGet("/items/{id}", (Guid id) => Results.Ok(new { id, name = "demo" }))
     .WithName("GetItem")
     .WithDescription("Demonstrates Preview 4: endpoint filters observe parameter-binding failures");
 
+// Preview 5 (#66228): OpenAPI keeps the original C# enum member names for non-body
+// enum parameters (query/route/header/form), even when ConfigureHttpJsonOptions
+// installs a JsonStringEnumConverter naming policy. Body-bound enums still follow
+// the JSON policy; non-body binding uses Enum.TryParse, so the schema now matches
+// what the framework will actually accept.
+//
+// Preview 5 (#66583): Array schema component reference IDs now use valid names
+// like "stringArray" and "TodoArray" instead of names containing array syntax.
+app.MapGet("/orders/{status}", (OrderStatus status) => Results.Ok(new { status }))
+    .WithName("GetOrdersByStatus")
+    .WithDescription("Route-bound enum — schema uses C# names like PendingReview");
+
+app.MapGet("/orders-by-query", (OrderStatus status) => Results.Ok(new { status }))
+    .WithName("GetOrdersByQuery")
+    .WithDescription("Query-bound enum — schema uses C# names regardless of JSON naming policy");
+
+app.MapPost("/orders", (Order order) => Results.Ok(order))
+    .WithName("CreateOrder")
+    .WithDescription("Body-bound enum — schema follows the JSON naming policy");
+
+app.MapGet("/tags", () => TypedResults.Ok<string[]>(new[] { "blazor", "kestrel", "openapi" }))
+    .WithName("GetTags")
+    .WithDescription("Returns string[] — array schema reference uses stringArray");
+
+app.MapGet("/todos", () => TypedResults.Ok<Todo[]>(new[]
+    {
+        new Todo(1, "Try Preview 5", false),
+        new Todo(2, "Read release notes", true),
+    }))
+    .WithName("GetTodos")
+    .WithDescription("Returns Todo[] — array schema reference uses TodoArray");
+
 app.Run();
+
+record Order(int Id, string Customer, OrderStatus Status);
+record Todo(int Id, string Title, bool Done);
+
+enum OrderStatus
+{
+    Pending,
+    PendingReview,
+    Shipped,
+    Delivered,
+}
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {

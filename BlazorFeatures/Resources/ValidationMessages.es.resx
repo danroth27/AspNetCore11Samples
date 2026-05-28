@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ContactName" xml:space="preserve"><value>Nombre</value></data>
+  <data name="ContactEmail" xml:space="preserve"><value>Correo electrónico</value></data>
+  <data name="ContactMessage" xml:space="preserve"><value>Mensaje</value></data>
+  <data name="Username" xml:space="preserve"><value>Nombre de usuario</value></data>
+  <data name="Email" xml:space="preserve"><value>Correo electrónico</value></data>
+  <data name="Age" xml:space="preserve"><value>Edad</value></data>
+  <data name="Website" xml:space="preserve"><value>Sitio web</value></data>
+  <data name="RequiredError" xml:space="preserve"><value>{0} es obligatorio.</value></data>
+  <data name="StringLengthError" xml:space="preserve"><value>{0} debe tener entre {2} y {1} caracteres.</value></data>
+  <data name="EmailError" xml:space="preserve"><value>{0} no es una dirección de correo electrónico válida.</value></data>
+  <data name="RangeError" xml:space="preserve"><value>El campo {0} debe estar entre {1} y {2}.</value></data>
+  <data name="UrlError" xml:space="preserve"><value>{0} no es una URL válida.</value></data>
+  <data name="UniqueEmailError" xml:space="preserve"><value>Este correo ya está registrado.</value></data>
+  <data name="UniqueUsernameError" xml:space="preserve"><value>Este nombre de usuario ya está en uso.</value></data>
+  <data name="ContactTitle" xml:space="preserve"><value>Contáctenos</value></data>
+  <data name="ContactSubtitle" xml:space="preserve"><value>La validación del lado del cliente se ejecuta en el navegador antes de enviar el formulario - sin viaje de ida y vuelta al servidor.</value></data>
+  <data name="LabelName" xml:space="preserve"><value>Nombre</value></data>
+  <data name="LabelEmail" xml:space="preserve"><value>Correo electrónico</value></data>
+  <data name="LabelMessage" xml:space="preserve"><value>Mensaje</value></data>
+  <data name="ContactSubmitButton" xml:space="preserve"><value>Enviar mensaje</value></data>
+  <data name="ContactSuccessTitle" xml:space="preserve"><value>¡Gracias, {0}!</value></data>
+  <data name="ContactSuccessMessage" xml:space="preserve"><value>Su mensaje ha sido recibido exitosamente.</value></data>
+  <data name="RegisterPageTitle" xml:space="preserve"><value>Registro</value></data>
+  <data name="RegisterFormTitle" xml:space="preserve"><value>Crear una cuenta</value></data>
+  <data name="UsernamePlaceholder" xml:space="preserve"><value>Elige un nombre de usuario (prueba &#x27;admin&#x27;)</value></data>
+  <data name="EmailPlaceholder" xml:space="preserve"><value>tu@ejemplo.com</value></data>
+  <data name="AgePlaceholder" xml:space="preserve"><value>Tu edad</value></data>
+  <data name="WebsitePlaceholder" xml:space="preserve"><value>https://ejemplo.com</value></data>
+  <data name="OptionalLabel" xml:space="preserve"><value>(opcional)</value></data>
+  <data name="CheckingMessage" xml:space="preserve"><value>Verificando disponibilidad...</value></data>
+  <data name="AvailableMessage" xml:space="preserve"><value>Disponible</value></data>
+  <data name="FaultedMessage" xml:space="preserve"><value>Error de validación - intente de nuevo.</value></data>
+  <data name="RegisterSubmitButton" xml:space="preserve"><value>Registrarse</value></data>
+  <data name="SubmittingButton" xml:space="preserve"><value>Validando...</value></data>
+  <data name="SubmittedSuccessfullyButton" xml:space="preserve"><value>Registrado</value></data>
+  <data name="RegisterSuccessMessage" xml:space="preserve"><value>¡Registro enviado con éxito!</value></data>
+  <data name="LanguageLabel" xml:space="preserve"><value>Idioma</value></data>
+</root>

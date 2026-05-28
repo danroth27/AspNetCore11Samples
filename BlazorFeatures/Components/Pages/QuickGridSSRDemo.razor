@@ -1,0 +1,44 @@
+@page "/quickgrid-ssr"
+@using Microsoft.AspNetCore.Components.QuickGrid
+
+<PageTitle>QuickGrid SSR</PageTitle>
+
+<h1>QuickGrid in statically rendered pages</h1>
+
+<p>
+    Preview 5 lets <code>QuickGrid</code> sort and paginate in statically rendered Blazor SSR pages
+    (<a href="https://github.com/dotnet/aspnetcore/pull/65451">dotnet/aspnetcore #65451</a>).
+    When the grid is not interactive, sortable headers and the paginator render as enhanced
+    forms that round-trip through the URL query string &mdash; no <code>@@rendermode</code>,
+    circuit, or WebAssembly runtime required. Reload the page or copy the URL to confirm
+    sort and page state are shareable.
+</p>
+
+<QuickGrid Items="@orders.AsQueryable()" Pagination="@pagination">
+    <PropertyColumn Property="@(o => o.Id)" Sortable="true" />
+    <PropertyColumn Property="@(o => o.Customer)" Sortable="true" />
+    <PropertyColumn Property="@(o => o.Total)" Format="C" Sortable="true" />
+    <PropertyColumn Property="@(o => o.PlacedOn)" Format="yyyy-MM-dd" Sortable="true" />
+</QuickGrid>
+
+<Paginator State="@pagination" />
+
+@code {
+    private readonly PaginationState pagination = new() { ItemsPerPage = 5 };
+
+    private static readonly string[] CustomerNames =
+    {
+        "Alice", "Bob", "Carol", "Dan", "Eve", "Frank", "Grace", "Heidi",
+        "Ivan", "Judy", "Kim", "Leo", "Mallory", "Niaj", "Olivia", "Peggy",
+    };
+
+    private readonly List<Order> orders = Enumerable.Range(1, 32)
+        .Select(i => new Order(
+            i,
+            CustomerNames[i % CustomerNames.Length],
+            (decimal)(20 + (i * 13.5)),
+            new DateOnly(2026, 1, 1).AddDays(i)))
+        .ToList();
+
+    private record Order(int Id, string Customer, decimal Total, DateOnly PlacedOn);
+}

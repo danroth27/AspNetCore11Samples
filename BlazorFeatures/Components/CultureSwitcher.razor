@@ -1,0 +1,18 @@
+@inject Microsoft.Extensions.Localization.IStringLocalizer<BlazorFeatures.Resources.ValidationMessages> L
+@inject NavigationManager Nav
+
+<div class="culture-switcher">
+    <span class="culture-label">@L["LanguageLabel"]:</span>
+    <a href="@SetCultureHref("en")">English</a>
+    <span> | </span>
+    <a href="@SetCultureHref("es")">Espa&#241;ol</a>
+</div>
+
+@code {
+    private string SetCultureHref(string culture)
+    {
+        var uri = new Uri(Nav.Uri);
+        var redirect = Uri.EscapeDataString(uri.PathAndQuery);
+        return $"/Culture/Set?culture={culture}&redirectUri={redirect}";
+    }
+}

@@ -1,0 +1,49 @@
+@page "/session-parameter"
+@using Microsoft.AspNetCore.Components.Web
+
+<PageTitle>SupplyParameterFromSession</PageTitle>
+
+<h1>[SupplyParameterFromSession]</h1>
+
+<p>
+    Preview 5 adds <code>[SupplyParameterFromSession]</code>
+    (<a href="https://github.com/dotnet/aspnetcore/pull/65184">dotnet/aspnetcore #65184</a>)
+    so SSR components can read and write HTTP session data declaratively, the same way
+    <code>[SupplyParameterFromQuery]</code> and <code>[SupplyParameterFromForm]</code> work today.
+    Values are serialized with <code>System.Text.Json</code> and persisted via
+    <code>Response.OnStarting</code> before the response is sent.
+</p>
+
+<p><strong>Current step:</strong> @CurrentStep</p>
+<p><strong>Cart item count:</strong> @CartItemCount</p>
+
+<EditForm Model="@input" FormName="checkout-next" OnSubmit="Next">
+    <button class="btn btn-primary" type="submit">Next step</button>
+</EditForm>
+
+<EditForm Model="@input" FormName="checkout-add" OnSubmit="AddItem">
+    <button class="btn btn-secondary" type="submit">Add cart item</button>
+</EditForm>
+
+<EditForm Model="@input" FormName="checkout-reset" OnSubmit="Reset">
+    <button class="btn btn-link" type="submit">Reset</button>
+</EditForm>
+
+@code {
+    private readonly object input = new();
+
+    [SupplyParameterFromSession(Name = "checkout-step")]
+    public int CurrentStep { get; set; }
+
+    [SupplyParameterFromSession(Name = "cart-count")]
+    public int CartItemCount { get; set; }
+
+    private void Next() => CurrentStep++;
+    private void AddItem() => CartItemCount++;
+
+    private void Reset()
+    {
+        CurrentStep = 0;
+        CartItemCount = 0;
+    }
+}

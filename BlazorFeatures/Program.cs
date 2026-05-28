@@ -1,7 +1,11 @@
+using System.Globalization;
 using BlazorFeatures;
 using BlazorFeatures.Components;
+using BlazorFeatures.Data;
+using BlazorFeatures.Resources;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Server.Circuits;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +23,36 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<CircuitTrackingHandler>();
 builder.Services.AddScoped<CircuitHandler>(sp => sp.GetRequiredService<CircuitTrackingHandler>());
 
+// Preview 5: validation infrastructure backing /client-validation and /async-validation.
+// AddValidation discovers [ValidatableType] models so DataAnnotationsValidator routes
+// through the new pipeline. AddValidationLocalization<T> (PR #66646) hooks an
+// IValidationLocalizer that resolves display names and error messages against the
+// IStringLocalizer<ValidationMessages> resx files in /Resources.
+builder.Services.AddLocalization();
+builder.Services.AddValidation();
+builder.Services.AddValidationLocalization<ValidationMessages>();
+builder.Services.AddSingleton<UserService>();
+
+// Preview 5: [SupplyParameterFromSession] (PR #65184) reads and writes ISession on
+// SSR component properties. It requires the standard session services + middleware.
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.Cookie.IsEssential = true;
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+});
+
+// Request localization (en/es) for the validation demos. Culture is selected via
+// the /Culture/Set endpoint below and persisted in a cookie.
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("es") };
+    options.DefaultRequestCulture = new RequestCulture("en");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+    options.RequestCultureProviders.Insert(0, new CookieRequestCultureProvider());
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -31,7 +65,21 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseRequestLocalization();
+app.UseSession();
 app.UseAntiforgery();
+
+// Culture switcher target for the validation demos. Writes the cookie that the
+// CookieRequestCultureProvider above reads on subsequent requests.
+app.MapGet("/Culture/Set", (HttpContext context, string culture, string redirectUri) =>
+{
+    context.Response.Cookies.Append(
+        CookieRequestCultureProvider.DefaultCookieName,
+        CookieRequestCultureProvider.MakeCookieValue(new RequestCulture(culture)),
+        new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1) });
+
+    return Results.LocalRedirect(redirectUri);
+});
 
 app.MapStaticAssets();
 
