@@ -41,16 +41,26 @@
     [CascadingParameter]
     public ITempData? TempData { get; set; }
 
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
     private string? message;
 
     [SupplyParameterFromForm(FormName = "set-tempdata")]
-    private string? InputMessage { get; set; } = "Hello from TempData!";
+    private string? InputMessage { get; set; }
 
     [SupplyParameterFromForm(FormName = "set-tempdata")]
     private string? Action { get; set; }
 
     protected override void OnInitialized()
     {
+        // Seed the form's default value on initial GET only; on form posts the
+        // binder supplies the user-typed value (including null/empty).
+        if (HttpContext is null || !HttpContext.Request.HasFormContentType)
+        {
+            InputMessage ??= "Hello from TempData!";
+        }
+
         // Workaround for https://github.com/dotnet/aspnetcore/issues/65720:
         // trigger lazy loading before calling Get()
         _ = TempData?.ContainsKey("Message");
