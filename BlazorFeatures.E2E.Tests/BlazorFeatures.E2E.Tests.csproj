@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <!-- Preview 5 daily build matching the rest of the sample repo. -->
-    <PackageReference Include="Microsoft.AspNetCore.Components.Testing" Version="11.0.0-preview.5.26276.113" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Testing" Version="11.0.0-preview.5.26272.118" />
     <PackageReference Include="Microsoft.Playwright.Xunit.v3" Version="1.58.0" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
@@ -32,7 +32,7 @@
        .targets file looks for tasks/ next to itself, so it never resolves.
        Point it at the real location until the package is fixed. -->
   <PropertyGroup>
-    <_E2ETasksAssembly>$([MSBuild]::EnsureTrailingSlash($(NuGetPackageRoot)))microsoft.aspnetcore.components.testing\11.0.0-preview.5.26276.113\tasks\netstandard2.0\Microsoft.AspNetCore.Components.Testing.Tasks.dll</_E2ETasksAssembly>
+    <_E2ETasksAssembly>$([MSBuild]::EnsureTrailingSlash($(NuGetPackageRoot)))microsoft.aspnetcore.components.testing\11.0.0-preview.5.26272.118\tasks\netstandard2.0\Microsoft.AspNetCore.Components.Testing.Tasks.dll</_E2ETasksAssembly>
   </PropertyGroup>
 
 </Project>

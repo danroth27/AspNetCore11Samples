@@ -46,8 +46,8 @@ builder.Services.AddSession(options =>
 // the /Culture/Set endpoint below and persisted in a cookie.
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
-    var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("es") };
-    options.DefaultRequestCulture = new RequestCulture("en");
+    var supportedCultures = new[] { new CultureInfo("en-US"), new CultureInfo("es-ES") };
+    options.DefaultRequestCulture = new RequestCulture("en-US");
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
     options.RequestCultureProviders.Insert(0, new CookieRequestCultureProvider());
