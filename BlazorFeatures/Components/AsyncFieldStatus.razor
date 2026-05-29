@@ -1,0 +1,84 @@
+@*
+    Renders the per-field status for an async-validated input:
+      - "pending" pill while EditContext.IsValidationPending(For) is true
+      - "faulted" pill when the async task threw
+      - "valid"   pill once the field has been edited and has no messages
+      - <ValidationMessage For="For" /> otherwise
+
+    Requires an ambient <EditForm> / <EditContext>. Subscribes to
+    OnValidationStateChanged so it re-renders independently of the parent
+    when the framework supersedes/completes a pending task.
+*@
+@typeparam T
+@implements IDisposable
+
+@if (CurrentEditContext.IsValidationPending(field))
+{
+    <div class="field-status pending">@PendingMessage</div>
+}
+else if (CurrentEditContext.IsValidationFaulted(field))
+{
+    <div class="field-status faulted">@FaultedMessage</div>
+}
+else if (IsValidatedAvailable())
+{
+    <div class="field-status valid">@AvailableMessage</div>
+}
+else
+{
+    <ValidationMessage For="For" />
+}
+
+@code {
+    private FieldIdentifier field;
+    private Expression<Func<T>>? lastFor;
+
+    [CascadingParameter] private EditContext CurrentEditContext { get; set; } = default!;
+
+    [Parameter, EditorRequired] public Expression<Func<T>> For { get; set; } = default!;
+    [Parameter] public string? PendingMessage { get; set; }
+    [Parameter] public string? FaultedMessage { get; set; }
+    [Parameter] public string? AvailableMessage { get; set; }
+
+    // Set to true while a submit is in flight so the "available" pill doesn't
+    // briefly appear between ValidateAsync awaits.
+    [Parameter] public bool Suppress { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (CurrentEditContext is null)
+        {
+            throw new InvalidOperationException(
+                $"{nameof(AsyncFieldStatus<T>)} requires a cascading EditContext, " +
+                "typically supplied by an <EditForm>.");
+        }
+        CurrentEditContext.OnValidationStateChanged += OnValidationStateChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!ReferenceEquals(For, lastFor))
+        {
+            field = FieldIdentifier.Create(For);
+            lastFor = For;
+        }
+    }
+
+    public void Dispose()
+    {
+        if (CurrentEditContext is not null)
+        {
+            CurrentEditContext.OnValidationStateChanged -= OnValidationStateChanged;
+        }
+    }
+
+    private void OnValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
+        => InvokeAsync(StateHasChanged);
+
+    private bool IsValidatedAvailable()
+        => !Suppress
+            && CurrentEditContext.IsModified(field)
+            && !CurrentEditContext.IsValidationPending(field)
+            && !CurrentEditContext.IsValidationFaulted(field)
+            && !CurrentEditContext.GetValidationMessages(field).Any();
+}
