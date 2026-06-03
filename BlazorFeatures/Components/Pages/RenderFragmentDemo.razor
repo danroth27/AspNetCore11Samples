@@ -1,0 +1,26 @@
+@page "/render-fragment-demo"
+
+@*
+    Verifies the Preview 5 release note for "Pass child content across render mode boundaries"
+    (dotnet/aspnetcore #66754, backport of #66528). Before Preview 5 this combination threw
+    InvalidOperationException because RenderFragment is a delegate and could not cross the
+    SSR -> interactive boundary. Preview 5 prerenders the fragment, captures the render tree,
+    and rehydrates it inside the interactive child.
+*@
+
+<PageTitle>RenderFragment across render mode boundaries</PageTitle>
+
+<h1>RenderFragment across render mode boundaries</h1>
+
+<p>
+    The page itself renders SSR. The <code>InteractiveChild</code> below renders with
+    <code>InteractiveServer</code> and receives <code>ChildContent</code> that was authored
+    in the SSR parent. Clicking the "Bump" button should update the timestamp without
+    re-rendering the SSR parent, proving the child is fully interactive even though it
+    accepted SSR-authored child content.
+</p>
+
+<InteractiveChild @rendermode="InteractiveServer">
+    <p id="ssr-projected">This paragraph was authored in the SSR parent and projected into the interactive child.</p>
+    <p>Server time at SSR: <strong id="ssr-time">@DateTime.UtcNow.ToString("HH:mm:ss.fff")</strong></p>
+</InteractiveChild>

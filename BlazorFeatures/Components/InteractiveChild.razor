@@ -1,0 +1,27 @@
+@*
+    Interactive child component used by RenderFragmentDemo to verify Preview 5
+    RenderFragment serialization across @rendermode boundaries (#66754/#66528).
+    The parent is SSR; this child renders InteractiveServer and receives
+    ChildContent originating in the SSR parent.
+*@
+
+<div id="interactive-child" style="border:1px solid #888; padding:1rem;">
+    <p>Interactive child render count: <strong id="render-count">@renderCount</strong></p>
+    <p>Last clicked: <strong id="last-click">@lastClick</strong></p>
+    <button id="bump" @onclick="Bump">Bump</button>
+
+    <div id="child-content">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    private int renderCount;
+    private string lastClick = "(none)";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    protected override void OnParametersSet() => renderCount++;
+
+    private void Bump() => lastClick = DateTime.UtcNow.ToString("HH:mm:ss.fff");
+}

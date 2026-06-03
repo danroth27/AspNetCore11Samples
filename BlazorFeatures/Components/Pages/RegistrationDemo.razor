@@ -1,0 +1,70 @@
+@page "/registration-demo"
+@using System.ComponentModel.DataAnnotations
+
+@*
+    Verifies the exact SSR validation snippet shipped in the .NET 11 Preview 5
+    release notes for ASP.NET Core. The snippet ships [SupplyParameterFromForm]
+    Model + HandleValidSubmit in the @code block so the sample compiles as-is.
+*@
+
+<PageTitle>Registration demo</PageTitle>
+
+<h1>Registration demo</h1>
+
+<EditForm Model="Model" Enhance FormName="registration" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+
+    <div>
+        <label for="Email">Email</label>
+        <InputText @bind-Value="Model!.Email" id="Email" />
+        <ValidationMessage For="@(() => Model!.Email)" />
+    </div>
+
+    <div>
+        <label for="Password">Password</label>
+        <InputText @bind-Value="Model!.Password" id="Password" type="password" />
+        <ValidationMessage For="@(() => Model!.Password)" />
+    </div>
+
+    <div>
+        <label for="ConfirmPassword">Confirm Password</label>
+        <InputText @bind-Value="Model!.ConfirmPassword" id="ConfirmPassword" type="password" />
+        <ValidationMessage For="@(() => Model!.ConfirmPassword)" />
+    </div>
+
+    <div>
+        <button type="submit" id="submit-btn">Register</button>
+    </div>
+</EditForm>
+
+@if (registered)
+{
+    <p id="registered">Registered <strong>@Model!.Email</strong>.</p>
+}
+
+@code {
+    [SupplyParameterFromForm]
+    private RegistrationModel? Model { get; set; }
+
+    private bool registered;
+
+    protected override void OnInitialized() => Model ??= new();
+
+    private void HandleValidSubmit() { registered = true; }
+
+    public class RegistrationModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        [StringLength(100, MinimumLength = 8)]
+        public string Password { get; set; } = "";
+
+        [Required]
+        [Compare("Password")]
+        [Display(Name = "Confirm Password")]
+        public string ConfirmPassword { get; set; } = "";
+    }
+}
