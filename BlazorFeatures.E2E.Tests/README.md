@@ -47,17 +47,15 @@ faster cold-start:
 dotnet build -p:E2EAppMode=publish
 ```
 
-## Preview 4 packaging workarounds
+## Packaging notes (Preview 5)
 
-The `BlazorFeatures.E2E.Tests.csproj` includes two notes-worthy workarounds for
-the Preview 4 build of `Microsoft.AspNetCore.Components.Testing`:
+The `Microsoft.AspNetCore.Components.Testing` package still ships its props/targets
+under `buildTransitive/net10.0/`, so net11.0 projects pick them up via NuGet's TFM
+compatibility rules — no extra `Import` is needed once the project targets net11.0.
 
-1. The package only ships `buildTransitive/net10.0/` props/targets, so net11.0
-   projects pick them up via NuGet's TFM compatibility rules — no extra
-   `Import` is needed once the project targets net11.0.
-2. The targets file probes for the MSBuild task assembly at
-   `$(MSBuildThisFileDirectory)tasks\netstandard2.0\…`, but the package
-   actually places `tasks/` at the package root (two levels up from
-   `buildTransitive/net10.0/`). The csproj sets `_E2ETasksAssembly` explicitly
-   to point at the real location. Once the package fixes its layout, that
-   override can be removed.
+> **Resolved in Preview 5:** Earlier previews placed the `GenerateE2EManifest` task
+> assembly under `tasks/` at the package root while the `.targets` file probed for it
+> next to itself, so the csproj had to set `_E2ETasksAssembly` explicitly. The Preview 5
+> `.targets` now probes `../../tasks/netstandard2.0/…` correctly, so that override has
+> been removed from `BlazorFeatures.E2E.Tests.csproj` and the manifest generates out of
+> the box.

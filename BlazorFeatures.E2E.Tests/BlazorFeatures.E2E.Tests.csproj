@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Preview 5 daily build matching the rest of the sample repo. -->
+    <!-- Preview 5 release, matching the rest of the sample repo. -->
     <PackageReference Include="Microsoft.AspNetCore.Components.Testing" Version="11.0.0-preview.5.26302.115" />
     <PackageReference Include="Microsoft.Playwright.Xunit.v3" Version="1.58.0" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />
@@ -25,15 +25,6 @@
       <E2EApp>true</E2EApp>
     </ProjectReference>
   </ItemGroup>
-
-  <!-- Workaround: the Preview 4 package places its targets under
-       buildTransitive/net10.0/ but the GenerateE2EManifest task DLL under
-       tasks/ at the package root. The default _E2ETasksAssembly probe in the
-       .targets file looks for tasks/ next to itself, so it never resolves.
-       Point it at the real location until the package is fixed. -->
-  <PropertyGroup>
-    <_E2ETasksAssembly>$([MSBuild]::EnsureTrailingSlash($(NuGetPackageRoot)))microsoft.aspnetcore.components.testing\11.0.0-preview.5.26302.115\tasks\netstandard2.0\Microsoft.AspNetCore.Components.Testing.Tasks.dll</_E2ETasksAssembly>
-  </PropertyGroup>
 
 </Project>
 
