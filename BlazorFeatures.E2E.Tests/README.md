@@ -46,16 +46,3 @@ faster cold-start:
 ```pwsh
 dotnet build -p:E2EAppMode=publish
 ```
-
-## Packaging notes (Preview 5)
-
-The `Microsoft.AspNetCore.Components.Testing` package still ships its props/targets
-under `buildTransitive/net10.0/`, so net11.0 projects pick them up via NuGet's TFM
-compatibility rules — no extra `Import` is needed once the project targets net11.0.
-
-> **Resolved in Preview 5:** Earlier previews placed the `GenerateE2EManifest` task
-> assembly under `tasks/` at the package root while the `.targets` file probed for it
-> next to itself, so the csproj had to set `_E2ETasksAssembly` explicitly. The Preview 5
-> `.targets` now probes `../../tasks/netstandard2.0/…` correctly, so that override has
-> been removed from `BlazorFeatures.E2E.Tests.csproj` and the manifest generates out of
-> the box.
