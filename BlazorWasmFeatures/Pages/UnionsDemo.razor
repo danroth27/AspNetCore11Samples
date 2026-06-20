@@ -1,68 +1,46 @@
 @page "/unions-demo"
 @using BlazorWasmFeatures.Models
+@using static BlazorWasmFeatures.Toast
 
-<PageTitle>C# Unions (trimming test)</PageTitle>
+<PageTitle>C# Unions in Blazor WebAssembly (trimming test)</PageTitle>
 
 <h1>C# Unions in Blazor WebAssembly (.NET 11 Preview 6)</h1>
 
 <p>
-    This page exercises C# unions in a <strong>published, trimmed</strong> Blazor WebAssembly app.
-    All three Slot cases must render, and <code>EventCallback&lt;CommandOutcome&gt;</code> must round-trip.
+    Same Toast / SaveOutcome scenarios as the Server demo, running in a
+    <strong>published, trimmed</strong> Blazor WebAssembly app. If unions needed
+    runtime metadata that trimming removes, this page would fail.
 </p>
 
-<h2>Slot — union(string, MarkupString, RenderFragment)</h2>
+<h2>Toast — <code>union ToastMessage(string, MarkupString, RenderFragment)</code></h2>
 
-<div data-testid="slot-string">
-    <SlotHost Content="@((Slot)"plain text — string case")" />
-</div>
-<div data-testid="slot-markup">
-    <SlotHost Content="@(new Slot(new MarkupString("<strong>markup</strong> case")))" />
-</div>
-<div data-testid="slot-fragment">
-    <SlotHost Content="@_fragment" />
-</div>
+<Toast Message="@("Saved 3 items.")" Severity="ToastSeverity.Success" />
+<Toast Message="@(new MarkupString("Saved <strong>3 items</strong>."))" Severity="ToastSeverity.Success" />
+<Toast Message="@_rich" Severity="ToastSeverity.Warning" />
 
-<h2>EventCallback&lt;CommandOutcome&gt;</h2>
+<h2>SaveOutcome — <code>union SaveOutcome(Saved, ValidationFailed, Conflict)</code></h2>
 
-<p data-testid="status">Status: <strong>@_status</strong></p>
-<button id="ok-btn" class="btn btn-primary" @onclick="FireOk">Fire success</button>
-<button id="err-btn" class="btn btn-danger" @onclick="FireErr">Fire error</button>
+<button id="ok-btn"   class="btn btn-primary" @onclick="@(() => Apply(new Saved(7, DateTimeOffset.Now)))">Save (success)</button>
+<button id="val-btn"  class="btn btn-warning" @onclick="@(() => Apply(new ValidationFailed(new[] { "Title required." })))">Save (validation)</button>
+<button id="conf-btn" class="btn btn-danger"  @onclick="@(() => Apply(new Conflict("v7", "Reload to see latest.")))">Save (conflict)</button>
 
-<h2>DynamicComponent + boxed union</h2>
-<DynamicComponent Type="typeof(SlotHost)" Parameters="_dynParams" />
+<p data-testid="status" class="mt-3"><strong>Last outcome:</strong> @_status</p>
 
 @code {
+    ToastMessage _rich;
     string _status = "(none)";
-    Slot _fragment;
-    Dictionary<string, object> _dynParams = new() { ["Content"] = new Slot("DynamicComponent — boxed Slot") };
 
     protected override void OnInitialized()
     {
-        _fragment = new Slot((RenderFragment)(b =>
-        {
-            b.AddMarkupContent(0, "<em>RenderFragment case rendered</em>");
-        }));
+        _rich = new ToastMessage((RenderFragment)(b =>
+            b.AddMarkupContent(0, "<em>RenderFragment toast — works in trimmed WASM</em>")));
     }
 
-    void FireOk()
+    void Apply(SaveOutcome outcome) => _status = outcome.Value switch
     {
-        CommandOutcome o = new CommandResult(7, "trimmed ok");
-        _status = o.Value switch
-        {
-            CommandResult r => $"OK item={r.ItemId} msg={r.Message}",
-            CommandError  e => $"ERR {e.Code}: {e.Message}",
-            _               => "(unknown)",
-        };
-    }
-
-    void FireErr()
-    {
-        CommandOutcome o = new CommandError("E_TRIM", "trimmed error");
-        _status = o.Value switch
-        {
-            CommandResult r => $"OK item={r.ItemId} msg={r.Message}",
-            CommandError  e => $"ERR {e.Code}: {e.Message}",
-            _               => "(unknown)",
-        };
-    }
+        Saved s            => $"OK id={s.Id}",
+        ValidationFailed v => $"VAL {string.Join("; ", v.Errors)}",
+        Conflict c         => $"CONFLICT etag={c.CurrentETag}",
+        _                  => "(unknown)",
+    };
 }

@@ -1,0 +1,18 @@
+@* A save button that reports its outcome through a SINGLE callback typed as
+   a union. The caller's handler must be exhaustive — the compiler tells you
+   if you forgot to handle Conflict. Before unions this would be three
+   separate EventCallbacks and the conflict case got forgotten. *@
+@using BlazorFeatures.Models
+
+<button class="btn btn-primary" @onclick="SaveSuccess">Save (success)</button>
+<button class="btn btn-warning" @onclick="SaveValidation">Save (validation failure)</button>
+<button class="btn btn-danger" @onclick="SaveConflict">Save (conflict)</button>
+
+@code {
+    [Parameter, EditorRequired]
+    public EventCallback<SaveOutcome> OnSaveCompleted { get; set; }
+
+    Task SaveSuccess()    => OnSaveCompleted.InvokeAsync(new Saved(42, DateTimeOffset.Now));
+    Task SaveValidation() => OnSaveCompleted.InvokeAsync(new ValidationFailed(new[] { "Title is required.", "Quantity must be > 0." }));
+    Task SaveConflict()   => OnSaveCompleted.InvokeAsync(new Conflict(CurrentETag: "v7", Hint: "Reload to see the latest version."));
+}

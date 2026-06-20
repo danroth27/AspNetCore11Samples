@@ -1,0 +1,37 @@
+@* A toast notification. Before C# unions this would require TWO parameters
+   (Message + MessageTemplate) plus a precedence rule in the docs. *@
+
+<div class="alert @SeverityClass d-flex align-items-center" role="alert">
+    <div class="flex-grow-1">
+        @switch (Message.Value)
+        {
+            case string text:
+                @text
+                break;
+            case MarkupString markup:
+                @markup
+                break;
+            case RenderFragment fragment:
+                @fragment
+                break;
+            default:
+                <em>(empty toast)</em>
+                break;
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ToastMessage Message { get; set; }
+    [Parameter] public ToastSeverity Severity { get; set; } = ToastSeverity.Info;
+
+    string SeverityClass => Severity switch
+    {
+        ToastSeverity.Success => "alert-success",
+        ToastSeverity.Warning => "alert-warning",
+        ToastSeverity.Error   => "alert-danger",
+        _                     => "alert-info",
+    };
+
+    public enum ToastSeverity { Info, Success, Warning, Error }
+}

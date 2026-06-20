@@ -1,0 +1,26 @@
+@using BlazorWasmFeatures.Models
+
+<div class="alert @SeverityClass">
+    @switch (Message.Value)
+    {
+        case string text:              @text;             break;
+        case MarkupString markup:      @markup;           break;
+        case RenderFragment fragment:  @fragment;         break;
+        default:                       <em>(empty)</em>;  break;
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ToastMessage Message { get; set; }
+    [Parameter] public ToastSeverity Severity { get; set; } = ToastSeverity.Info;
+
+    string SeverityClass => Severity switch
+    {
+        ToastSeverity.Success => "alert-success",
+        ToastSeverity.Warning => "alert-warning",
+        ToastSeverity.Error   => "alert-danger",
+        _                     => "alert-info",
+    };
+
+    public enum ToastSeverity { Info, Success, Warning, Error }
+}

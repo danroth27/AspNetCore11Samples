@@ -1,131 +1,152 @@
 @page "/unions-demo"
 @using BlazorFeatures.Models
+@using static BlazorFeatures.Components.Toast
 @rendermode InteractiveServer
 
 <PageTitle>C# Unions in Blazor</PageTitle>
 
 <h1>C# Unions in Blazor (.NET 11 Preview 6)</h1>
 
-<p>
-    Demonstrates the four Blazor surfaces where C# unions matter:
-    a slot-style component parameter, an event callback,
-    <code>CascadingValue&lt;TUnion&gt;</code>, and <code>DynamicComponent</code>.
-    See the <a href="https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/fundamentals/unions.md">unions article</a>
-    and the <a href="https://github.com/aspnet/specs/pull/782">Blazor unions spec</a> for background.
+<p class="lead">
+    Two scenarios every Blazor app hits, recast around a single C# language feature.
 </p>
 
-<h2>1. Slot-style component parameter — <code>union Slot(string, MarkupString, RenderFragment)</code></h2>
+<hr />
 
-<p>One parameter, three call shapes:</p>
+<h2>Scenario 1 — The library-author's title/label parameter</h2>
 
-@* §5.1.1 note: the Razor literal-attribute shortcut does NOT apply to non-string
-   parameter types, so a plain `Content="hello"` does not compile. The expression
-   form `@("hello")` runs the union's implicit string conversion at compile time.
+<p>
+    Every component library — MudBlazor, FluentUI, Radzen — ships a label, title, or
+    toast message parameter as <em>two</em> parameters: a <code>string</code> for the
+    80% case and a <code>RenderFragment</code> for the rest. That doubles the API,
+    forces a precedence rule in the docs, and pushes a <code>null</code>-checking ladder
+    into the component's render code.
+</p>
+
+<p>With C# unions, that parameter is one type:</p>
+
+<pre><code class="language-csharp">public union ToastMessage(string, MarkupString, RenderFragment);
+
+[Parameter, EditorRequired] public ToastMessage Message { get; set; }</code></pre>
+
+<p>Three call shapes — same parameter, no precedence rules:</p>
+
+@* Razor literal-attribute shortcut doesn't apply to non-string parameter types.
    Tracked at https://github.com/dotnet/razor/issues/13188 *@
-<div class="union-row">
-    <SlotHost Content="@("Plain text — compile-time implicit conversion from string.")" />
-</div>
-<div class="union-row">
-    <SlotHost Content="@(new MarkupString("<strong>Raw HTML</strong> through <code>MarkupString</code>."))" />
-</div>
-<div class="union-row">
-    <SlotHost Content="@_fragmentSlot" />
-</div>
-
-<h2>2. <code>EventCallback&lt;TUnion&gt;</code> — single callback, multiple outcome shapes</h2>
-
-<p>Status: <strong>@_lastOutcome</strong></p>
-
-<UnionEditor OnOutcome="HandleOutcome" />
-
-<h2>3. <code>CascadingValue&lt;TUnion&gt;</code> — delivery</h2>
-
-<p>The subscriber below reads the same <code>Slot</code> from cascading context.</p>
-
-<CascadingValue Value="_cascade" TValue="Slot">
-    <CascadeSubscriber />
-</CascadingValue>
-
-<button class="btn btn-secondary" @onclick="CycleCascade">Cycle cascade value</button>
-
-<h2>4. <code>DynamicComponent</code> — boxing rule</h2>
+<Toast Message="@("Saved 3 items.")" Severity="ToastSeverity.Success" />
+<Toast Message="@(new MarkupString("Saved <strong>3 items</strong>, including <em>Widget #42</em>."))" Severity="ToastSeverity.Success" />
+<Toast Message="@_richToast" Severity="ToastSeverity.Warning" />
 
 <p>
-    When using <code>DynamicComponent.Parameters</code>, the dictionary value must be boxed as the
-    union, not as a raw case value. Passing a raw <code>string</code> for a union-typed property
-    fails at runtime — the C# implicit conversion is compile-time only.
+    Inside the component, a <code>switch</code> on <code>Message.Value</code> handles
+    every case. The compiler tells you if you forgot one — no <code>if</code> ladder,
+    no <code>null</code> checks, no "which parameter wins."
 </p>
 
-<DynamicComponent Type="typeof(SlotHost)" Parameters="_dynParams" />
+<hr />
 
-<button class="btn btn-secondary" @onclick="ToggleDynBoxing">Toggle correct/wrong boxing</button>
-@if (_dynError is { } err)
-{
-    <div class="alert alert-warning">Last error: <code>@err</code></div>
-}
+<h2>Scenario 2 — The outcome that never got handled</h2>
+
+<p>
+    A <code>Save</code> can succeed, can fail validation, or can hit an optimistic-concurrency
+    conflict. Today components expose three <code>EventCallback</code>s and callers forget
+    to wire <code>OnConflict</code>, so conflicts silently look like successes. With a union
+    outcome, one callback delivers any of three shapes — and the consumer's
+    <code>switch</code> is compiler-checked for exhaustiveness.
+</p>
+
+<pre><code class="language-csharp">public union SaveOutcome(Saved, ValidationFailed, Conflict);
+
+[Parameter, EditorRequired]
+public EventCallback&lt;SaveOutcome&gt; OnSaveCompleted { get; set; }</code></pre>
+
+<SaveButton OnSaveCompleted="HandleOutcome" />
+
+<div class="mt-3">
+    <strong>Last outcome:</strong>
+    @switch (_lastOutcome?.Value)
+    {
+        case Saved s:
+            <span class="badge bg-success">Saved id=@s.Id at @s.At.ToString("T")</span>
+            break;
+        case ValidationFailed v:
+            <span class="badge bg-warning text-dark">Validation failed</span>
+            <ul class="mt-2">@foreach (var e in v.Errors) { <li>@e</li> }</ul>
+            break;
+        case Conflict c:
+            <span class="badge bg-danger">Conflict — current ETag @c.CurrentETag</span>
+            <div class="mt-2 text-muted">@c.Hint</div>
+            break;
+        case null:
+            <span class="text-muted">(no save yet)</span>
+            break;
+    }
+</div>
+
+<hr />
+
+<h2>Footnote — <code>DynamicComponent</code> and the boxing rule</h2>
+
+<p>
+    One thing to know if you build dynamic form/page renderers:
+    <code>DynamicComponent.Parameters</code> is <code>IDictionary&lt;string, object&gt;</code>.
+    The implicit conversion from a case type to the union runs at <em>compile</em> time,
+    so dictionary values must be boxed as the union, not as the raw case value.
+</p>
+
+<ErrorBoundary @ref="_dynBoundary">
+    <ChildContent>
+        <DynamicComponent Type="typeof(Toast)" Parameters="_dynParams" />
+    </ChildContent>
+    <ErrorContent Context="ex">
+        <div class="alert alert-danger">
+            <strong>Runtime error:</strong> <code>@ex.Message</code>
+        </div>
+    </ErrorContent>
+</ErrorBoundary>
+
+<button class="btn btn-outline-secondary mt-2" @onclick="ToggleDynBoxing">
+    @(_dynBoxedCorrectly ? "Try with wrong boxing (raw string)" : "Restore correct boxing")
+</button>
 
 @code {
-    int _rfClicks;
-    Slot _fragmentSlot;
+    ToastMessage _richToast;
+    SaveOutcome? _lastOutcome;
+
+    Dictionary<string, object> _dynParams = new()
+    {
+        ["Message"]  = new ToastMessage("Boxed as ToastMessage — works."),
+        ["Severity"] = ToastSeverity.Info,
+    };
+    bool _dynBoxedCorrectly = true;
+    ErrorBoundary? _dynBoundary;
 
     protected override void OnInitialized()
     {
-        _fragmentSlot = new Slot((RenderFragment)(b =>
+        _richToast = new ToastMessage((RenderFragment)(b =>
         {
-            b.AddMarkupContent(0, "<em>A full <strong>RenderFragment</strong> with markup,</em> ");
+            b.AddMarkupContent(0, "Saved 3 items. ");
             b.OpenElement(1, "button");
-            b.AddAttribute(2, "class", "btn btn-sm btn-link");
-            b.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, () => _rfClicks++));
-            b.AddContent(4, $"click me ({_rfClicks})");
+            b.AddAttribute(2, "class", "btn btn-sm btn-link p-0 align-baseline");
+            b.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, OnUndo));
+            b.AddContent(4, "Undo");
             b.CloseElement();
         }));
     }
-    string _lastOutcome = "(no outcome yet)";
 
-    Slot _cascade = (Slot)"Cascade #1 — plain text";
-    int _cascadeIdx;
-
-    Dictionary<string, object> _dynParams = new() { ["Content"] = new Slot("Boxed correctly as Slot.") };
-    bool _dynBoxedCorrectly = true;
-    string? _dynError;
-
-    void HandleOutcome(CommandOutcome outcome) => _lastOutcome = outcome.Value switch
-    {
-        CommandResult r => $"OK — item {r.ItemId}: {r.Message}",
-        CommandError  e => $"ERROR — {e.Code}: {e.Message}",
-        _               => "(unknown)",
-    };
-
-    void CycleCascade()
-    {
-        _cascadeIdx = (_cascadeIdx + 1) % 3;
-        _cascade = _cascadeIdx switch
-        {
-            0 => (Slot)"Cascade #1 — plain text",
-            1 => new Slot(new MarkupString("<u>Cascade #2 — markup</u>")),
-            _ => new Slot((RenderFragment)(b =>
-            {
-                b.OpenElement(0, "span");
-                b.AddAttribute(1, "class", "badge bg-info");
-                b.AddContent(2, "Cascade #3 — fragment");
-                b.CloseElement();
-            })),
-        };
-    }
+    void HandleOutcome(SaveOutcome outcome) => _lastOutcome = outcome;
+    void OnUndo() => _lastOutcome = new Conflict("v7", "Undo invoked from the rich toast.");
 
     void ToggleDynBoxing()
     {
         _dynBoxedCorrectly = !_dynBoxedCorrectly;
-        _dynError = null;
-        try
+        _dynBoundary?.Recover();
+        _dynParams = new Dictionary<string, object>
         {
-            _dynParams = new Dictionary<string, object>
-            {
-                ["Content"] = _dynBoxedCorrectly
-                    ? (object)new Slot("Boxed correctly as Slot.")
-                    : (object)"Raw string — will fail to assign to Slot parameter.",
-            };
-        }
-        catch (Exception ex) { _dynError = ex.Message; }
+            ["Message"] = _dynBoxedCorrectly
+                ? (object)new ToastMessage("Boxed as ToastMessage — works.")
+                : (object)"Raw string — DynamicComponent can't assign this to a ToastMessage parameter.",
+            ["Severity"] = ToastSeverity.Info,
+        };
     }
 }
