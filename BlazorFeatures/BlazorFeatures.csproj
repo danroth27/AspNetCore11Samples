@@ -4,11 +4,13 @@
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>preview</LangVersion>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="11.0.0-preview.5.26302.115" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.QuickGrid" Version="11.0.0-preview.6.26315.102" />
   </ItemGroup>
 
   <ItemGroup>

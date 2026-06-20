@@ -1,0 +1,15 @@
+@* A component-library editor that exposes a single EventCallback<CommandOutcome>
+   so the host doesn't need separate OnSuccess / OnError parameters. *@
+@using BlazorFeatures.Models
+
+<div class="btn-group">
+    <button class="btn btn-primary" @onclick="FireSuccess">Fire success</button>
+    <button class="btn btn-danger"  @onclick="FireError">Fire error</button>
+</div>
+
+@code {
+    [Parameter] public EventCallback<CommandOutcome> OnOutcome { get; set; }
+
+    Task FireSuccess() => OnOutcome.InvokeAsync(new CommandResult(99, "hot reloaded!"));
+    Task FireError()   => OnOutcome.InvokeAsync(new CommandError("E_CONFLICT", "row was modified"));
+}

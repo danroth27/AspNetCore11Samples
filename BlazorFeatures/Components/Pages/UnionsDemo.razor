@@ -1,0 +1,131 @@
+@page "/unions-demo"
+@using BlazorFeatures.Models
+@rendermode InteractiveServer
+
+<PageTitle>C# Unions in Blazor</PageTitle>
+
+<h1>C# Unions in Blazor (.NET 11 Preview 6)</h1>
+
+<p>
+    Demonstrates the four Blazor surfaces where C# unions matter:
+    a slot-style component parameter, an event callback,
+    <code>CascadingValue&lt;TUnion&gt;</code>, and <code>DynamicComponent</code>.
+    See the <a href="https://github.com/dotnet/AspNetCore.Docs/blob/main/aspnetcore/fundamentals/unions.md">unions article</a>
+    and the <a href="https://github.com/aspnet/specs/pull/782">Blazor unions spec</a> for background.
+</p>
+
+<h2>1. Slot-style component parameter — <code>union Slot(string, MarkupString, RenderFragment)</code></h2>
+
+<p>One parameter, three call shapes:</p>
+
+@* §5.1.1 note: the Razor literal-attribute shortcut does NOT apply to non-string
+   parameter types, so a plain `Content="hello"` does not compile. The expression
+   form `@("hello")` runs the union's implicit string conversion at compile time.
+   Tracked at https://github.com/dotnet/razor/issues/13188 *@
+<div class="union-row">
+    <SlotHost Content="@("Plain text — compile-time implicit conversion from string.")" />
+</div>
+<div class="union-row">
+    <SlotHost Content="@(new MarkupString("<strong>Raw HTML</strong> through <code>MarkupString</code>."))" />
+</div>
+<div class="union-row">
+    <SlotHost Content="@_fragmentSlot" />
+</div>
+
+<h2>2. <code>EventCallback&lt;TUnion&gt;</code> — single callback, multiple outcome shapes</h2>
+
+<p>Status: <strong>@_lastOutcome</strong></p>
+
+<UnionEditor OnOutcome="HandleOutcome" />
+
+<h2>3. <code>CascadingValue&lt;TUnion&gt;</code> — delivery</h2>
+
+<p>The subscriber below reads the same <code>Slot</code> from cascading context.</p>
+
+<CascadingValue Value="_cascade" TValue="Slot">
+    <CascadeSubscriber />
+</CascadingValue>
+
+<button class="btn btn-secondary" @onclick="CycleCascade">Cycle cascade value</button>
+
+<h2>4. <code>DynamicComponent</code> — boxing rule</h2>
+
+<p>
+    When using <code>DynamicComponent.Parameters</code>, the dictionary value must be boxed as the
+    union, not as a raw case value. Passing a raw <code>string</code> for a union-typed property
+    fails at runtime — the C# implicit conversion is compile-time only.
+</p>
+
+<DynamicComponent Type="typeof(SlotHost)" Parameters="_dynParams" />
+
+<button class="btn btn-secondary" @onclick="ToggleDynBoxing">Toggle correct/wrong boxing</button>
+@if (_dynError is { } err)
+{
+    <div class="alert alert-warning">Last error: <code>@err</code></div>
+}
+
+@code {
+    int _rfClicks;
+    Slot _fragmentSlot;
+
+    protected override void OnInitialized()
+    {
+        _fragmentSlot = new Slot((RenderFragment)(b =>
+        {
+            b.AddMarkupContent(0, "<em>A full <strong>RenderFragment</strong> with markup,</em> ");
+            b.OpenElement(1, "button");
+            b.AddAttribute(2, "class", "btn btn-sm btn-link");
+            b.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, () => _rfClicks++));
+            b.AddContent(4, $"click me ({_rfClicks})");
+            b.CloseElement();
+        }));
+    }
+    string _lastOutcome = "(no outcome yet)";
+
+    Slot _cascade = (Slot)"Cascade #1 — plain text";
+    int _cascadeIdx;
+
+    Dictionary<string, object> _dynParams = new() { ["Content"] = new Slot("Boxed correctly as Slot.") };
+    bool _dynBoxedCorrectly = true;
+    string? _dynError;
+
+    void HandleOutcome(CommandOutcome outcome) => _lastOutcome = outcome.Value switch
+    {
+        CommandResult r => $"OK — item {r.ItemId}: {r.Message}",
+        CommandError  e => $"ERROR — {e.Code}: {e.Message}",
+        _               => "(unknown)",
+    };
+
+    void CycleCascade()
+    {
+        _cascadeIdx = (_cascadeIdx + 1) % 3;
+        _cascade = _cascadeIdx switch
+        {
+            0 => (Slot)"Cascade #1 — plain text",
+            1 => new Slot(new MarkupString("<u>Cascade #2 — markup</u>")),
+            _ => new Slot((RenderFragment)(b =>
+            {
+                b.OpenElement(0, "span");
+                b.AddAttribute(1, "class", "badge bg-info");
+                b.AddContent(2, "Cascade #3 — fragment");
+                b.CloseElement();
+            })),
+        };
+    }
+
+    void ToggleDynBoxing()
+    {
+        _dynBoxedCorrectly = !_dynBoxedCorrectly;
+        _dynError = null;
+        try
+        {
+            _dynParams = new Dictionary<string, object>
+            {
+                ["Content"] = _dynBoxedCorrectly
+                    ? (object)new Slot("Boxed correctly as Slot.")
+                    : (object)"Raw string — will fail to assign to Slot parameter.",
+            };
+        }
+        catch (Exception ex) { _dynError = ex.Message; }
+    }
+}

@@ -1,0 +1,24 @@
+@* A component-library-style "slot" parameter: accepts text, MarkupString,
+   or a RenderFragment as a single Content parameter via C# unions. *@
+
+<div class="slot-host">
+    @switch (Content.Value)
+    {
+        case string text:
+            <span class="slot-text">@text</span>
+            break;
+        case MarkupString markup:
+            @markup
+            break;
+        case RenderFragment fragment:
+            @fragment
+            break;
+        default:
+            <em class="slot-empty">(no content)</em>
+            break;
+    }
+</div>
+
+@code {
+    [Parameter] public Slot Content { get; set; }
+}

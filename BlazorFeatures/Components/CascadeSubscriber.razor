@@ -1,0 +1,17 @@
+@* Subscribes to CascadingValue<Slot> and renders whatever shape arrives. *@
+@using BlazorFeatures.Models
+
+<div class="cascade-sub">
+    cascade:
+    @switch (Cascade.Value)
+    {
+        case string s:               <span>@s</span>; break;
+        case MarkupString markup:    @markup;          break;
+        case RenderFragment f:       @f;               break;
+        default:                     <em>(unset)</em>; break;
+    }
+</div>
+
+@code {
+    [CascadingParameter] public Slot Cascade { get; set; }
+}

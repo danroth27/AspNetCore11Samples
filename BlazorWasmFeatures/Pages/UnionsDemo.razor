@@ -1,0 +1,68 @@
+@page "/unions-demo"
+@using BlazorWasmFeatures.Models
+
+<PageTitle>C# Unions (trimming test)</PageTitle>
+
+<h1>C# Unions in Blazor WebAssembly (.NET 11 Preview 6)</h1>
+
+<p>
+    This page exercises C# unions in a <strong>published, trimmed</strong> Blazor WebAssembly app.
+    All three Slot cases must render, and <code>EventCallback&lt;CommandOutcome&gt;</code> must round-trip.
+</p>
+
+<h2>Slot — union(string, MarkupString, RenderFragment)</h2>
+
+<div data-testid="slot-string">
+    <SlotHost Content="@((Slot)"plain text — string case")" />
+</div>
+<div data-testid="slot-markup">
+    <SlotHost Content="@(new Slot(new MarkupString("<strong>markup</strong> case")))" />
+</div>
+<div data-testid="slot-fragment">
+    <SlotHost Content="@_fragment" />
+</div>
+
+<h2>EventCallback&lt;CommandOutcome&gt;</h2>
+
+<p data-testid="status">Status: <strong>@_status</strong></p>
+<button id="ok-btn" class="btn btn-primary" @onclick="FireOk">Fire success</button>
+<button id="err-btn" class="btn btn-danger" @onclick="FireErr">Fire error</button>
+
+<h2>DynamicComponent + boxed union</h2>
+<DynamicComponent Type="typeof(SlotHost)" Parameters="_dynParams" />
+
+@code {
+    string _status = "(none)";
+    Slot _fragment;
+    Dictionary<string, object> _dynParams = new() { ["Content"] = new Slot("DynamicComponent — boxed Slot") };
+
+    protected override void OnInitialized()
+    {
+        _fragment = new Slot((RenderFragment)(b =>
+        {
+            b.AddMarkupContent(0, "<em>RenderFragment case rendered</em>");
+        }));
+    }
+
+    void FireOk()
+    {
+        CommandOutcome o = new CommandResult(7, "trimmed ok");
+        _status = o.Value switch
+        {
+            CommandResult r => $"OK item={r.ItemId} msg={r.Message}",
+            CommandError  e => $"ERR {e.Code}: {e.Message}",
+            _               => "(unknown)",
+        };
+    }
+
+    void FireErr()
+    {
+        CommandOutcome o = new CommandError("E_TRIM", "trimmed error");
+        _status = o.Value switch
+        {
+            CommandResult r => $"OK item={r.ItemId} msg={r.Message}",
+            CommandError  e => $"ERR {e.Code}: {e.Message}",
+            _               => "(unknown)",
+        };
+    }
+}

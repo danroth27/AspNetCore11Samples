@@ -36,6 +36,15 @@ and features. Demos are grouped by the preview that introduced them.
 - **QuickGrid SSR** (`/quickgrid-ssr`) — QuickGrid in statically rendered pages
 - **Session Parameter** (`/session-parameter`) — `[SupplyParameterFromSession]`
 
+**Preview 6**
+- **C# Unions in Blazor** (`/unions-demo`) — `union Slot(string, MarkupString, RenderFragment)`,
+  `EventCallback<TUnion>`, `CascadingValue<TUnion>`, and `DynamicComponent` with a boxed-union
+  parameter. Requires `<LangVersion>preview</LangVersion>` and `<EnablePreviewFeatures>true</EnablePreviewFeatures>`.
+  Note: the Razor literal-attribute shortcut (`Content="hello"`) does **not** compile against a
+  union-typed parameter — use the expression form `Content="@("hello")"`. Tracked at
+  [dotnet/razor#13188](https://github.com/dotnet/razor/issues/13188).
+  See the design note: [aspnet/specs#782](https://github.com/aspnet/specs/pull/782).
+
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
 `Microsoft.AspNetCore.Components.Testing` library (Preview 4), which combines xUnit v3
@@ -49,6 +58,9 @@ Standalone Blazor WebAssembly app demonstrating WASM-specific features:
 - **Environment Variables** — Access environment variables via `IConfiguration`
 - **Web Worker** (`/web-worker`) — Offload CPU-intensive work to a Web Worker running a
   separate .NET runtime (uses the `WebWorkerDemo` library)
+- **C# Unions (Preview 6)** (`/unions-demo`) — Verified to work end-to-end in a published,
+  trimmed WASM build (default ILLink trimming): Slot rendering of all three cases,
+  `EventCallback<CommandOutcome>`, and `DynamicComponent` with a boxed union parameter.
 
 ### WebWorkerDemo
 Reusable Razor class library that wires up a `[JSExport]`/`[JSImport]` Web Worker host so
@@ -69,7 +81,7 @@ Web API (minimal APIs) demonstrating framework features:
 
 ## Running the Samples
 
-Requires the .NET 11 Preview 5 SDK (`11.0.100-preview.5.26302.115`) or later.
+Requires the .NET 11 Preview 6 SDK (`11.0.100-preview.6.26315.102`) or later.
 
 ```pwsh
 dotnet build
