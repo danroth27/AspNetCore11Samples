@@ -37,12 +37,16 @@ and features. Demos are grouped by the preview that introduced them.
 - **Session Parameter** (`/session-parameter`) — `[SupplyParameterFromSession]`
 
 **Preview 6**
-- **C# Unions in Blazor** (`/unions-demo`) — `union Slot(string, MarkupString, RenderFragment)`,
-  `EventCallback<TUnion>`, `CascadingValue<TUnion>`, and `DynamicComponent` with a boxed-union
-  parameter. Requires `<LangVersion>preview</LangVersion>` and `<EnablePreviewFeatures>true</EnablePreviewFeatures>`.
-  Note: the Razor literal-attribute shortcut (`Content="hello"`) does **not** compile against a
-  union-typed parameter — use the expression form `Content="@("hello")"`. Tracked at
-  [dotnet/razor#13188](https://github.com/dotnet/razor/issues/13188).
+- **C# Unions in Blazor** (`/unions-demo`) — `union ToastMessage(string, RenderFragment)`,
+  a `union LoadState(Loading, Loaded, Failed)` component state rendered with an exhaustive
+  switch, and `DynamicComponent` with a boxed-union parameter. Requires
+  `<LangVersion>preview</LangVersion>` and `<EnablePreviewFeatures>true</EnablePreviewFeatures>`.
+  The union deliberately omits a `MarkupString` (raw HTML) case to avoid an XSS footgun.
+  Current Razor limitations for union-typed parameters: the literal-attribute shortcut
+  (`Content="hello"`) doesn't compile — use the expression form `Content="@("hello")"`
+  ([dotnet/razor#13188](https://github.com/dotnet/razor/issues/13188)) — and child-content
+  markup doesn't populate a `RenderFragment` case
+  ([dotnet/razor#13200](https://github.com/dotnet/razor/issues/13200)).
   See the design note: [aspnet/specs#782](https://github.com/aspnet/specs/pull/782).
 
 ### BlazorFeatures.E2E.Tests
@@ -59,8 +63,8 @@ Standalone Blazor WebAssembly app demonstrating WASM-specific features:
 - **Web Worker** (`/web-worker`) — Offload CPU-intensive work to a Web Worker running a
   separate .NET runtime (uses the `WebWorkerDemo` library)
 - **C# Unions (Preview 6)** (`/unions-demo`) — Verified to work end-to-end in a published,
-  trimmed WASM build (default ILLink trimming): Slot rendering of all three cases,
-  `EventCallback<CommandOutcome>`, and `DynamicComponent` with a boxed union parameter.
+  trimmed WASM build (default ILLink trimming): `ToastMessage` rendering of the `string` and
+  `RenderFragment` cases, and a `LoadState` union matched with an exhaustive switch expression.
 - **Gateway backend proxy (Preview 6)** (`/weather`) — The dev-time Blazor Gateway
   (`Microsoft.AspNetCore.Components.Gateway`) proxies the client's `api/weather` calls to the
   separate `BackendApi` service via YARP. Because the WASM client only ever makes same-origin

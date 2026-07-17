@@ -25,63 +25,71 @@
 
 <p>With C# unions, that parameter is one type:</p>
 
-<pre><code class="language-csharp">public union ToastMessage(string, MarkupString, RenderFragment);
+<pre><code class="language-csharp">public union ToastMessage(string, RenderFragment);
 
 [Parameter, EditorRequired] public ToastMessage Message { get; set; }</code></pre>
 
-<p>Three call shapes — same parameter, no precedence rules:</p>
+<p>
+    <strong>No <code>MarkupString</code> case — on purpose.</strong> A union makes it trivial to add
+    a raw-HTML case, but exposing raw HTML through a public component parameter is an XSS footgun.
+    We keep the safe cases: <code>string</code> is HTML-encoded and <code>RenderFragment</code> is
+    safely composed.
+</p>
 
-@* Razor literal-attribute shortcut doesn't apply to non-string parameter types.
-   Tracked at https://github.com/dotnet/razor/issues/13188 *@
+<div class="alert alert-warning" role="alert">
+    <strong>Preview 6 Razor limitations for union-typed parameters.</strong>
+    <ul class="mb-0">
+        <li>The literal-attribute form <code>Message="Saved."</code> doesn't compile — use the
+            expression form <code>Message="@("Saved.")"</code>
+            (<a href="https://github.com/dotnet/razor/issues/13188" target="_blank">dotnet/razor#13188</a>).</li>
+        <li>Child-content markup (<code>&lt;Toast&gt;…&lt;/Toast&gt;</code>) doesn't populate the
+            <code>RenderFragment</code> case, so the rich example below builds its fragment in C# with
+            <code>RenderTreeBuilder</code> instead of natural Razor markup
+            (<a href="https://github.com/dotnet/razor/issues/13200" target="_blank">dotnet/razor#13200</a>).</li>
+    </ul>
+</div>
+
+<p>Two call shapes — same parameter, no precedence rules:</p>
+
 <Toast Message="@("Saved 3 items.")" Severity="ToastSeverity.Success" />
-<Toast Message="@(new MarkupString("Saved <strong>3 items</strong>, including <em>Widget #42</em>."))" Severity="ToastSeverity.Success" />
 <Toast Message="@_richToast" Severity="ToastSeverity.Warning" />
 
+<p class="text-muted small mb-0">
+    The rich toast's <em>Undo</em> button has been clicked @_undoCount time(s) — proof the
+    <code>RenderFragment</code> case wires events normally.
+</p>
+
 <p>
-    Inside the component, a <code>switch</code> on <code>Message.Value</code> handles
-    every case. The compiler tells you if you forgot one — no <code>if</code> ladder,
-    no <code>null</code> checks, no "which parameter wins."
+    Inside the component, a single <code>switch</code> renders whichever case the parameter
+    holds — no <code>if</code> ladder, no <code>null</code> checks, and no "which parameter
+    wins" precedence rule to document.
 </p>
 
 <hr />
 
-<h2>Scenario 2 — The outcome that never got handled</h2>
+<h2>Scenario 2 — The load state with illegal combinations</h2>
 
 <p>
-    A <code>Save</code> can succeed, can fail validation, or can hit an optimistic-concurrency
-    conflict. Today components expose three <code>EventCallback</code>s and callers forget
-    to wire <code>OnConflict</code>, so conflicts silently look like successes. With a union
-    outcome, one callback delivers any of three shapes — and the consumer's
-    <code>switch</code> is compiler-checked for exhaustiveness.
+    Async data loading is usually modeled with several loose fields —
+    <code>bool _loading; T? _data; string? _error;</code> — plus an
+    <code>@@if/else</code> ladder. That representation allows nonsense states
+    (loading <em>and</em> failed, or loaded with <code>null</code> data). A closed
+    union makes the state <strong>exactly one</strong> case:
 </p>
 
-<pre><code class="language-csharp">public union SaveOutcome(Saved, ValidationFailed, Conflict);
+<pre><code class="language-csharp">public union LoadState(Loading, Loaded, Failed);
 
-[Parameter, EditorRequired]
-public EventCallback&lt;SaveOutcome&gt; OnSaveCompleted { get; set; }</code></pre>
+private LoadState _state = new Loading();</code></pre>
 
-<SaveButton OnSaveCompleted="HandleOutcome" />
+<p>
+    Rendering matches <code>_state</code> directly. Because the union is closed, matching the
+    value itself in a <code>switch</code> <em>expression</em> is compiler-checked for
+    exhaustiveness — add a fourth case and it stops compiling until you handle it. (Matching the
+    <code>object</code>-typed <code>_state.Value</code> is <em>not</em> exhaustiveness-checked, so
+    prefer the union value directly.) No illegal combinations, no <code>null</code> checks.
+</p>
 
-<div class="mt-3">
-    <strong>Last outcome:</strong>
-    @switch (_lastOutcome?.Value)
-    {
-        case Saved s:
-            <span class="badge bg-success">Saved id=@s.Id at @s.At.ToString("T")</span>
-            break;
-        case ValidationFailed v:
-            <span class="badge bg-warning text-dark">Validation failed</span>
-            <ul class="mt-2">@foreach (var e in v.Errors) { <li>@e</li> }</ul>
-            break;
-        case Conflict c:
-            <span class="badge bg-danger">Conflict — current ETag @c.CurrentETag</span>
-            <div class="mt-2 text-muted">@c.Hint</div>
-            break;
-        case null:
-            <span class="text-muted">(no save yet)</span>
-            break;
-    }
-</div>
+<AsyncList />
 
 <hr />
 
@@ -111,7 +119,7 @@ public EventCallback&lt;SaveOutcome&gt; OnSaveCompleted { get; set; }</code></pr
 
 @code {
     ToastMessage _richToast;
-    SaveOutcome? _lastOutcome;
+    int _undoCount;
 
     Dictionary<string, object> _dynParams = new()
     {
@@ -134,8 +142,7 @@ public EventCallback&lt;SaveOutcome&gt; OnSaveCompleted { get; set; }</code></pr
         }));
     }
 
-    void HandleOutcome(SaveOutcome outcome) => _lastOutcome = outcome;
-    void OnUndo() => _lastOutcome = new Conflict("v7", "Undo invoked from the rich toast.");
+    void OnUndo() => _undoCount++;
 
     void ToggleDynBoxing()
     {

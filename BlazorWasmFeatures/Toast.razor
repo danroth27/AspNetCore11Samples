@@ -4,7 +4,6 @@
     @switch (Message.Value)
     {
         case string text:              @text;             break;
-        case MarkupString markup:      @markup;           break;
         case RenderFragment fragment:  @fragment;         break;
         default:                       <em>(empty)</em>;  break;
     }

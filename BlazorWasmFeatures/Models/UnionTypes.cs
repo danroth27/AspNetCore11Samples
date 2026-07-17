@@ -1,9 +1,11 @@
 namespace BlazorWasmFeatures.Models;
 
 // .NET 11 Preview 6 — C# unions in Blazor WASM (trimming target).
-public union ToastMessage(string, Microsoft.AspNetCore.Components.MarkupString, Microsoft.AspNetCore.Components.RenderFragment);
+// No MarkupString case on purpose: raw HTML in a public parameter is an XSS
+// footgun; string (encoded) + RenderFragment (composed) are safe by default.
+public union ToastMessage(string, Microsoft.AspNetCore.Components.RenderFragment);
 
-public sealed record Saved(int Id, DateTimeOffset At);
-public sealed record ValidationFailed(IReadOnlyList<string> Errors);
-public sealed record Conflict(string CurrentETag, string Hint);
-public union SaveOutcome(Saved, ValidationFailed, Conflict);
+public sealed record Loading;
+public sealed record Loaded(IReadOnlyList<string> Items);
+public sealed record Failed(string Message);
+public union LoadState(Loading, Loaded, Failed);
