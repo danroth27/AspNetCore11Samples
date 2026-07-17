@@ -8,7 +8,10 @@
       "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
       "applicationUrl": "http://localhost:5090",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ReverseProxy__Routes__weather__ClusterId": "backend",
+        "ReverseProxy__Routes__weather__Match__Path": "/api/{**catch-all}",
+        "ReverseProxy__Clusters__backend__Destinations__backend1__Address": "http://localhost:5100/"
       }
     },
     "https": {
@@ -18,7 +21,10 @@
       "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}",
       "applicationUrl": "https://localhost:7046;http://localhost:5090",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ReverseProxy__Routes__weather__ClusterId": "backend",
+        "ReverseProxy__Routes__weather__Match__Path": "/api/{**catch-all}",
+        "ReverseProxy__Clusters__backend__Destinations__backend1__Address": "https://localhost:7100/"
       }
     }
   }

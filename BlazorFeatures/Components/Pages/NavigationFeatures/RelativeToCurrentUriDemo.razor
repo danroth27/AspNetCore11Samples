@@ -16,7 +16,7 @@
     <button class="btn btn-primary" @onclick="NavigateToOverview">
         Navigate to "overview" (relative)
     </button>
-    <button class="btn btn-secondary" @onclick="NavigateToGetUriWithHash">
+    <button class="btn btn-secondary" @onclick="NavigateToGetUriWithFragment">
         Navigate to "get-uri-with-hash" (relative)
     </button>
 </div>
@@ -24,7 +24,7 @@
 <h3>NavLink with RelativeToCurrentUri</h3>
 <nav class="nav nav-pills mb-3">
     <NavLink href="overview" RelativeToCurrentUri="true" class="nav-link">Overview</NavLink>
-    <NavLink href="get-uri-with-hash" RelativeToCurrentUri="true" class="nav-link">GetUriWithHash()</NavLink>
+    <NavLink href="get-uri-with-hash" RelativeToCurrentUri="true" class="nav-link">GetUriWithFragment()</NavLink>
 </nav>
 
 <h2>Code Example</h2>
@@ -40,7 +40,7 @@ Navigation.NavigateTo("overview", new NavigationOptions
         Navigation.NavigateTo("overview", new NavigationOptions { RelativeToCurrentUri = true });
     }
 
-    private void NavigateToGetUriWithHash()
+    private void NavigateToGetUriWithFragment()
     {
         Navigation.NavigateTo("get-uri-with-hash", new NavigationOptions { RelativeToCurrentUri = true });
     }

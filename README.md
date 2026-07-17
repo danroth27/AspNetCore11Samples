@@ -14,7 +14,7 @@ and features. Demos are grouped by the preview that introduced them.
 - **Label Component** (`/label-demo`) — Accessible form labels with `[Display]` attribute support
 - **DisplayName Component** (`/displayname-demo`) — Display property names from metadata attributes
 - **QuickGrid OnRowClick** (`/quickgrid-onrowclick`) — Row click event handling
-- **Navigation Features** (`/navigation-features/overview`) — `RelativeToCurrentUri` and `GetUriWithHash()`
+- **Navigation Features** (`/navigation-features/overview`) — `RelativeToCurrentUri` and `GetUriWithFragment()`
 - **MathML Support** (`/mathml-demo`) — Proper MathML namespace in interactive rendering
 - **InvokeVoidAsync() Analyzer** (`/invoke-void-async-analyzer`) — JSInterop best-practices analyzer
 
@@ -61,6 +61,13 @@ Standalone Blazor WebAssembly app demonstrating WASM-specific features:
 - **C# Unions (Preview 6)** (`/unions-demo`) — Verified to work end-to-end in a published,
   trimmed WASM build (default ILLink trimming): Slot rendering of all three cases,
   `EventCallback<CommandOutcome>`, and `DynamicComponent` with a boxed union parameter.
+- **Gateway backend proxy (Preview 6)** (`/weather`) — The dev-time Blazor Gateway
+  (`Microsoft.AspNetCore.Components.Gateway`) proxies the client's `api/weather` calls to the
+  separate `BackendApi` service via YARP. Because the WASM client only ever makes same-origin
+  requests to the gateway, **no CORS configuration is required** on the client or the backend.
+  The proxy route is supplied to the gateway through the `ReverseProxy` config keys in
+  `Properties/launchSettings.json`. Requires the gateway to run both the app and the backend
+  (see [Running the Samples](#running-the-samples)).
 
 ### WebWorkerDemo
 Reusable Razor class library that wires up a `[JSExport]`/`[JSImport]` Web Worker host so
@@ -79,9 +86,15 @@ Web API (minimal APIs) demonstrating framework features:
 - **Enum parameter naming in OpenAPI** (Preview 5) — Non-body enum params keep their C# names; array schema IDs use valid names
 - **Kestrel trailer header timeout** (Preview 5) — `RequestHeadersTimeout` applies to HTTP/2 and HTTP/3 trailer frames
 
+### BackendApi
+Minimal Web API that serves weather data at `/api/weather`. It is the backend service that
+`BlazorWasmFeatures` calls through the Blazor Gateway's YARP proxy. It has **no CORS
+configuration on purpose** — the browser only talks to the gateway (same origin), and the
+gateway-to-backend hop happens server-side.
+
 ## Running the Samples
 
-Requires the .NET 11 Preview 6 SDK (`11.0.100-preview.6.26315.102`) or later.
+Requires the .NET 11 Preview 6 SDK (`11.0.100-preview.6.26359.118`) or later.
 
 ```pwsh
 dotnet build
@@ -89,5 +102,23 @@ dotnet build
 # Run a project, e.g. the Blazor Web App:
 dotnet run --project BlazorFeatures
 ```
+
+### Blazor Gateway backend proxy (no CORS)
+
+To try the standalone WASM app calling a backend through the gateway proxy, run the backend
+and the WASM app (hosted by the gateway) together, then browse to `/weather`:
+
+```pwsh
+# Terminal 1 — backend service on http://localhost:5100
+dotnet run --project BackendApi --launch-profile http
+
+# Terminal 2 — WASM app hosted by the Blazor Gateway on http://localhost:5090
+dotnet run --project BlazorWasmFeatures --launch-profile http
+```
+
+Open http://localhost:5090/weather. The client fetches `api/weather` from the gateway origin,
+and the gateway proxies it to `BackendApi` via YARP. The proxy route/cluster (and the backend
+address) are configured with `ReverseProxy__*` environment variables in
+`BlazorWasmFeatures/Properties/launchSettings.json`.
 
 All packages are published on nuget.org, so no extra NuGet feeds are required.
