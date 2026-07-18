@@ -7,7 +7,7 @@
 <h1>C# Unions in Blazor WebAssembly (.NET 11 Preview 6)</h1>
 
 <p>
-    Same Toast / SaveOutcome scenarios as the Server demo, running in a
+    The same Toast scenario as the Server demo, running in a
     <strong>published, trimmed</strong> Blazor WebAssembly app. If unions needed
     runtime metadata that trimming removes, this page would fail.
 </p>
@@ -25,30 +25,12 @@
 <Toast Message="@("Saved 3 items.")" Severity="ToastSeverity.Success" />
 <Toast Message="@_rich" Severity="ToastSeverity.Warning" />
 
-<h2>LoadState — <code>union LoadState(Loading, Loaded, Failed)</code></h2>
-
-<button id="loading-btn" class="btn btn-secondary" @onclick="@(() => _state = new Loading())">Loading</button>
-<button id="loaded-btn"  class="btn btn-primary"   @onclick="@(() => _state = new Loaded(new[] { "Widget #42", "Gadget #7" }))">Loaded</button>
-<button id="failed-btn"  class="btn btn-danger"    @onclick="@(() => _state = new Failed("Service unavailable (HTTP 503)."))">Failed</button>
-
-<p data-testid="status" class="mt-3"><strong>State:</strong> @Describe(_state)</p>
-
 @code {
     ToastMessage _rich;
-    LoadState _state = new Loading();
 
     protected override void OnInitialized()
     {
         _rich = new ToastMessage((RenderFragment)(b =>
             b.AddMarkupContent(0, "<em>RenderFragment toast — works in trimmed WASM</em>")));
     }
-
-    // Switch expression over a closed union — no default arm. If this compiles
-    // clean, exhaustiveness checking works (and still holds after trimming).
-    static string Describe(LoadState state) => state switch
-    {
-        Loading  => "Loading…",
-        Loaded l => $"Loaded {l.Items.Count} item(s)",
-        Failed f => f.Message,
-    };
 }

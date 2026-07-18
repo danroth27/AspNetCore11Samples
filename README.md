@@ -37,10 +37,10 @@ and features. Demos are grouped by the preview that introduced them.
 - **Session Parameter** (`/session-parameter`) — `[SupplyParameterFromSession]`
 
 **Preview 6**
-- **C# Unions in Blazor** (`/unions-demo`) — `union ToastMessage(string, RenderFragment)`,
-  a `union LoadState(Loading, Loaded, Failed)` component state rendered with an exhaustive
-  switch, and `DynamicComponent` with a boxed-union parameter. Requires
-  `<LangVersion>preview</LangVersion>` and `<EnablePreviewFeatures>true</EnablePreviewFeatures>`.
+- **C# Unions in Blazor** (`/unions-demo`) — `union ToastMessage(string, RenderFragment)`
+  as a single "text or template" component parameter, plus `DynamicComponent` with a
+  boxed-union parameter. Requires `<LangVersion>preview</LangVersion>` and
+  `<EnablePreviewFeatures>true</EnablePreviewFeatures>`.
   The union deliberately omits a `MarkupString` (raw HTML) case to avoid an XSS footgun.
   Current Razor limitations for union-typed parameters: the literal-attribute shortcut
   (`Content="hello"`) doesn't compile — use the expression form `Content="@("hello")"`
@@ -64,7 +64,7 @@ Standalone Blazor WebAssembly app demonstrating WASM-specific features:
   separate .NET runtime (uses the `WebWorkerDemo` library)
 - **C# Unions (Preview 6)** (`/unions-demo`) — Verified to work end-to-end in a published,
   trimmed WASM build (default ILLink trimming): `ToastMessage` rendering of the `string` and
-  `RenderFragment` cases, and a `LoadState` union matched with an exhaustive switch expression.
+  `RenderFragment` cases.
 - **Gateway backend proxy (Preview 6)** (`/weather`) — The dev-time Blazor Gateway
   (`Microsoft.AspNetCore.Components.Gateway`) proxies the client's `api/weather` calls to the
   separate `BackendApi` service via YARP. Because the WASM client only ever makes same-origin

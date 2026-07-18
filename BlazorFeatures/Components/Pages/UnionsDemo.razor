@@ -8,12 +8,13 @@
 <h1>C# Unions in Blazor (.NET 11 Preview 6)</h1>
 
 <p class="lead">
-    Two scenarios every Blazor app hits, recast around a single C# language feature.
+    A component parameter that is text <em>or</em> a template — expressed as a single C# union
+    instead of two parameters and a precedence rule.
 </p>
 
 <hr />
 
-<h2>Scenario 1 — The library-author's title/label parameter</h2>
+<h2>The library-author's title/label parameter</h2>
 
 <p>
     Every component library — MudBlazor, FluentUI, Radzen — ships a label, title, or
@@ -64,32 +65,6 @@
     holds — no <code>if</code> ladder, no <code>null</code> checks, and no "which parameter
     wins" precedence rule to document.
 </p>
-
-<hr />
-
-<h2>Scenario 2 — The load state with illegal combinations</h2>
-
-<p>
-    Async data loading is usually modeled with several loose fields —
-    <code>bool _loading; T? _data; string? _error;</code> — plus an
-    <code>@@if/else</code> ladder. That representation allows nonsense states
-    (loading <em>and</em> failed, or loaded with <code>null</code> data). A closed
-    union makes the state <strong>exactly one</strong> case:
-</p>
-
-<pre><code class="language-csharp">public union LoadState(Loading, Loaded, Failed);
-
-private LoadState _state = new Loading();</code></pre>
-
-<p>
-    Rendering matches <code>_state</code> directly. Because the union is closed, matching the
-    value itself in a <code>switch</code> <em>expression</em> is compiler-checked for
-    exhaustiveness — add a fourth case and it stops compiling until you handle it. (Matching the
-    <code>object</code>-typed <code>_state.Value</code> is <em>not</em> exhaustiveness-checked, so
-    prefer the union value directly.) No illegal combinations, no <code>null</code> checks.
-</p>
-
-<AsyncList />
 
 <hr />
 
