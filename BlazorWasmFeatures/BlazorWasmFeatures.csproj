@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WebWorkerDemo\WebWorkerDemo.csproj" />
+    <ProjectReference Include="..\SharedComponents\SharedComponents.csproj" />
   </ItemGroup>
 
 </Project>

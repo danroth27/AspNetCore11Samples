@@ -19,4 +19,8 @@
     <EmbeddedResource Update="Resources\ValidationMessages.*.resx" GenerateSource="false" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\SharedComponents\SharedComponents.csproj" />
+  </ItemGroup>
+
 </Project>

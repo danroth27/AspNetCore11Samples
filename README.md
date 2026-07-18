@@ -48,6 +48,8 @@ and features. Demos are grouped by the preview that introduced them.
   markup doesn't populate a `RenderFragment` case
   ([dotnet/razor#13200](https://github.com/dotnet/razor/issues/13200)).
   See the design note: [aspnet/specs#782](https://github.com/aspnet/specs/pull/782).
+  The `Toast` component and `ToastMessage` union live in the shared `SharedComponents`
+  Razor Class Library (referenced by both the Server and WebAssembly apps).
 
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
@@ -76,6 +78,11 @@ Standalone Blazor WebAssembly app demonstrating WASM-specific features:
 ### WebWorkerDemo
 Reusable Razor class library that wires up a `[JSExport]`/`[JSImport]` Web Worker host so
 Blazor WebAssembly apps can run .NET work off the UI thread. Consumed by `BlazorWasmFeatures`.
+
+### SharedComponents
+Generic Razor Class Library for components and types shared across the sample apps. Currently
+hosts the `Toast` component and the `ToastMessage` C# union, consumed by both `BlazorFeatures`
+(Server) and `BlazorWasmFeatures` (WebAssembly).
 
 ### ApiFeatures
 Web API (minimal APIs) demonstrating framework features:
