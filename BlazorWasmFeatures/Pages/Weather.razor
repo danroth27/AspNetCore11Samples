@@ -5,7 +5,12 @@
 
 <h1>Weather</h1>
 
-<p>This component demonstrates fetching data from the server.</p>
+<p>
+    This component fetches weather data from a separate backend API
+    (<code>BackendApi</code>). In development the requests go to <code>api/weather</code>
+    on the gateway's own origin; the Blazor Gateway proxies them to the backend
+    service via YARP, so no CORS configuration is required.
+</p>
 
 @if (forecasts == null)
 {
@@ -41,7 +46,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+        // Same-origin call to the gateway, which proxies "/api/*" to the
+        // backend service via YARP. No CORS needed on the client or backend.
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("api/weather");
     }
 
     public class WeatherForecast

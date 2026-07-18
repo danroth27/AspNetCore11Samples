@@ -1,0 +1,133 @@
+@page "/unions-demo"
+@using SharedComponents
+@rendermode InteractiveServer
+
+<PageTitle>C# Unions in Blazor</PageTitle>
+
+<h1>C# Unions in Blazor (.NET 11 Preview 6)</h1>
+
+<p class="lead">
+    A component parameter that is text <em>or</em> a template — expressed as a single C# union
+    instead of two parameters and a precedence rule.
+</p>
+
+<hr />
+
+<h2>The library-author's title/label parameter</h2>
+
+<p>
+    Every component library — MudBlazor, FluentUI, Radzen — ships a label, title, or
+    toast message parameter as <em>two</em> parameters: a <code>string</code> for the
+    80% case and a <code>RenderFragment</code> for the rest. That doubles the API,
+    forces a precedence rule in the docs, and pushes a <code>null</code>-checking ladder
+    into the component's render code.
+</p>
+
+<p>With C# unions, that parameter is one type:</p>
+
+<pre><code class="language-csharp">public union ToastMessage(string, RenderFragment);
+
+[Parameter, EditorRequired] public ToastMessage Message { get; set; }</code></pre>
+
+<p>
+    <strong>No <code>MarkupString</code> case — on purpose.</strong> A union makes it trivial to add
+    a raw-HTML case, but exposing raw HTML through a public component parameter is an XSS footgun.
+    We keep the safe cases: <code>string</code> is HTML-encoded and <code>RenderFragment</code> is
+    safely composed.
+</p>
+
+<div class="alert alert-warning" role="alert">
+    <strong>Preview 6 Razor limitations for union-typed parameters.</strong>
+    <ul class="mb-0">
+        <li>The literal-attribute form <code>Message="Saved."</code> doesn't compile — use the
+            expression form <code>Message="@("Saved.")"</code>
+            (<a href="https://github.com/dotnet/razor/issues/13188" target="_blank">dotnet/razor#13188</a>).</li>
+        <li>Child-content markup (<code>&lt;Toast&gt;…&lt;/Toast&gt;</code>) doesn't populate the
+            <code>RenderFragment</code> case, so the rich example below builds its fragment in C# with
+            <code>RenderTreeBuilder</code> instead of natural Razor markup
+            (<a href="https://github.com/dotnet/razor/issues/13200" target="_blank">dotnet/razor#13200</a>).</li>
+    </ul>
+</div>
+
+<p>Two call shapes — same parameter, no precedence rules:</p>
+
+<Toast Message="@("Saved 3 items.")" Severity="ToastSeverity.Success" />
+<Toast Message="@_richToast" Severity="ToastSeverity.Warning" />
+
+<p class="text-muted small mb-0">
+    The rich toast's <em>Undo</em> button has been clicked @_undoCount time(s) — proof the
+    <code>RenderFragment</code> case wires events normally.
+</p>
+
+<p>
+    Inside the component, a single <code>switch</code> renders whichever case the parameter
+    holds — no <code>if</code> ladder, no <code>null</code> checks, and no "which parameter
+    wins" precedence rule to document.
+</p>
+
+<hr />
+
+<h2>Footnote — <code>DynamicComponent</code> and the boxing rule</h2>
+
+<p>
+    One thing to know if you build dynamic form/page renderers:
+    <code>DynamicComponent.Parameters</code> is <code>IDictionary&lt;string, object&gt;</code>.
+    The implicit conversion from a case type to the union runs at <em>compile</em> time,
+    so dictionary values must be boxed as the union, not as the raw case value.
+</p>
+
+<ErrorBoundary @ref="_dynBoundary">
+    <ChildContent>
+        <DynamicComponent Type="typeof(Toast)" Parameters="_dynParams" />
+    </ChildContent>
+    <ErrorContent Context="ex">
+        <div class="alert alert-danger">
+            <strong>Runtime error:</strong> <code>@ex.Message</code>
+        </div>
+    </ErrorContent>
+</ErrorBoundary>
+
+<button class="btn btn-outline-secondary mt-2" @onclick="ToggleDynBoxing">
+    @(_dynBoxedCorrectly ? "Try with wrong boxing (raw string)" : "Restore correct boxing")
+</button>
+
+@code {
+    ToastMessage _richToast;
+    int _undoCount;
+
+    Dictionary<string, object> _dynParams = new()
+    {
+        ["Message"]  = new ToastMessage("Boxed as ToastMessage — works."),
+        ["Severity"] = ToastSeverity.Info,
+    };
+    bool _dynBoxedCorrectly = true;
+    ErrorBoundary? _dynBoundary;
+
+    protected override void OnInitialized()
+    {
+        _richToast = new ToastMessage((RenderFragment)(b =>
+        {
+            b.AddMarkupContent(0, "Saved 3 items. ");
+            b.OpenElement(1, "button");
+            b.AddAttribute(2, "class", "btn btn-sm btn-link p-0 align-baseline");
+            b.AddAttribute(3, "onclick", EventCallback.Factory.Create(this, OnUndo));
+            b.AddContent(4, "Undo");
+            b.CloseElement();
+        }));
+    }
+
+    void OnUndo() => _undoCount++;
+
+    void ToggleDynBoxing()
+    {
+        _dynBoxedCorrectly = !_dynBoxedCorrectly;
+        _dynBoundary?.Recover();
+        _dynParams = new Dictionary<string, object>
+        {
+            ["Message"] = _dynBoxedCorrectly
+                ? (object)new ToastMessage("Boxed as ToastMessage — works.")
+                : (object)"Raw string — DynamicComponent can't assign this to a ToastMessage parameter.",
+            ["Severity"] = ToastSeverity.Info,
+        };
+    }
+}

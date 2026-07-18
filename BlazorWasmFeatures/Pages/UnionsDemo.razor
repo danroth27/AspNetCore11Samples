@@ -1,0 +1,35 @@
+@page "/unions-demo"
+@using SharedComponents
+
+<PageTitle>C# Unions in Blazor WebAssembly (trimming test)</PageTitle>
+
+<h1>C# Unions in Blazor WebAssembly (.NET 11 Preview 6)</h1>
+
+<p>
+    The same Toast scenario as the Server demo, running in a
+    <strong>published, trimmed</strong> Blazor WebAssembly app. If unions needed
+    runtime metadata that trimming removes, this page would fail.
+</p>
+
+<h2>Toast — <code>union ToastMessage(string, RenderFragment)</code></h2>
+
+<p class="text-muted">
+    No <code>MarkupString</code> case: raw HTML in a public parameter is an XSS footgun.
+    Preview 6 Razor limitations apply to union-typed parameters — literal attributes
+    (<a href="https://github.com/dotnet/razor/issues/13188" target="_blank">#13188</a>) and
+    child-content markup (<a href="https://github.com/dotnet/razor/issues/13200" target="_blank">#13200</a>)
+    aren't supported yet, so set the parameter with an expression.
+</p>
+
+<Toast Message="@("Saved 3 items.")" Severity="ToastSeverity.Success" />
+<Toast Message="@_rich" Severity="ToastSeverity.Warning" />
+
+@code {
+    ToastMessage _rich;
+
+    protected override void OnInitialized()
+    {
+        _rich = new ToastMessage((RenderFragment)(b =>
+            b.AddMarkupContent(0, "<em>RenderFragment toast — works in trimmed WASM</em>")));
+    }
+}

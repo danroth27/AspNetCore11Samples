@@ -14,7 +14,7 @@ and features. Demos are grouped by the preview that introduced them.
 - **Label Component** (`/label-demo`) — Accessible form labels with `[Display]` attribute support
 - **DisplayName Component** (`/displayname-demo`) — Display property names from metadata attributes
 - **QuickGrid OnRowClick** (`/quickgrid-onrowclick`) — Row click event handling
-- **Navigation Features** (`/navigation-features/overview`) — `RelativeToCurrentUri` and `GetUriWithHash()`
+- **Navigation Features** (`/navigation-features/overview`) — `RelativeToCurrentUri` and `GetUriWithFragment()`
 - **MathML Support** (`/mathml-demo`) — Proper MathML namespace in interactive rendering
 - **InvokeVoidAsync() Analyzer** (`/invoke-void-async-analyzer`) — JSInterop best-practices analyzer
 
@@ -36,6 +36,21 @@ and features. Demos are grouped by the preview that introduced them.
 - **QuickGrid SSR** (`/quickgrid-ssr`) — QuickGrid in statically rendered pages
 - **Session Parameter** (`/session-parameter`) — `[SupplyParameterFromSession]`
 
+**Preview 6**
+- **C# Unions in Blazor** (`/unions-demo`) — `union ToastMessage(string, RenderFragment)`
+  as a single "text or template" component parameter, plus `DynamicComponent` with a
+  boxed-union parameter. Requires `<LangVersion>preview</LangVersion>` and
+  `<EnablePreviewFeatures>true</EnablePreviewFeatures>`.
+  The union deliberately omits a `MarkupString` (raw HTML) case to avoid an XSS footgun.
+  Current Razor limitations for union-typed parameters: the literal-attribute shortcut
+  (`Content="hello"`) doesn't compile — use the expression form `Content="@("hello")"`
+  ([dotnet/razor#13188](https://github.com/dotnet/razor/issues/13188)) — and child-content
+  markup doesn't populate a `RenderFragment` case
+  ([dotnet/razor#13200](https://github.com/dotnet/razor/issues/13200)).
+  See the design note: [aspnet/specs#782](https://github.com/aspnet/specs/pull/782).
+  The `Toast` component and `ToastMessage` union live in the shared `SharedComponents`
+  Razor Class Library (referenced by both the Server and WebAssembly apps).
+
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
 `Microsoft.AspNetCore.Components.Testing` library (Preview 4), which combines xUnit v3
@@ -49,10 +64,25 @@ Standalone Blazor WebAssembly app demonstrating WASM-specific features:
 - **Environment Variables** — Access environment variables via `IConfiguration`
 - **Web Worker** (`/web-worker`) — Offload CPU-intensive work to a Web Worker running a
   separate .NET runtime (uses the `WebWorkerDemo` library)
+- **C# Unions (Preview 6)** (`/unions-demo`) — Verified to work end-to-end in a published,
+  trimmed WASM build (default ILLink trimming): `ToastMessage` rendering of the `string` and
+  `RenderFragment` cases.
+- **Gateway backend proxy (Preview 6)** (`/weather`) — The dev-time Blazor Gateway
+  (`Microsoft.AspNetCore.Components.Gateway`) proxies the client's `api/weather` calls to the
+  separate `BackendApi` service via YARP. Because the WASM client only ever makes same-origin
+  requests to the gateway, **no CORS configuration is required** on the client or the backend.
+  The proxy route is supplied to the gateway through the `ReverseProxy` config keys in
+  `Properties/launchSettings.json`. Requires the gateway to run both the app and the backend
+  (see [Running the Samples](#running-the-samples)).
 
 ### WebWorkerDemo
 Reusable Razor class library that wires up a `[JSExport]`/`[JSImport]` Web Worker host so
 Blazor WebAssembly apps can run .NET work off the UI thread. Consumed by `BlazorWasmFeatures`.
+
+### SharedComponents
+Generic Razor Class Library for components and types shared across the sample apps. Currently
+hosts the `Toast` component and the `ToastMessage` C# union, consumed by both `BlazorFeatures`
+(Server) and `BlazorWasmFeatures` (WebAssembly).
 
 ### ApiFeatures
 Web API (minimal APIs) demonstrating framework features:
@@ -67,9 +97,15 @@ Web API (minimal APIs) demonstrating framework features:
 - **Enum parameter naming in OpenAPI** (Preview 5) — Non-body enum params keep their C# names; array schema IDs use valid names
 - **Kestrel trailer header timeout** (Preview 5) — `RequestHeadersTimeout` applies to HTTP/2 and HTTP/3 trailer frames
 
+### BackendApi
+Minimal Web API that serves weather data at `/api/weather`. It is the backend service that
+`BlazorWasmFeatures` calls through the Blazor Gateway's YARP proxy. It has **no CORS
+configuration on purpose** — the browser only talks to the gateway (same origin), and the
+gateway-to-backend hop happens server-side.
+
 ## Running the Samples
 
-Requires the .NET 11 Preview 5 SDK (`11.0.100-preview.5.26302.115`) or later.
+Requires the .NET 11 Preview 6 SDK (`11.0.100-preview.6.26359.118`) or later.
 
 ```pwsh
 dotnet build
@@ -77,5 +113,23 @@ dotnet build
 # Run a project, e.g. the Blazor Web App:
 dotnet run --project BlazorFeatures
 ```
+
+### Blazor Gateway backend proxy (no CORS)
+
+To try the standalone WASM app calling a backend through the gateway proxy, run the backend
+and the WASM app (hosted by the gateway) together, then browse to `/weather`:
+
+```pwsh
+# Terminal 1 — backend service on http://localhost:5100
+dotnet run --project BackendApi --launch-profile http
+
+# Terminal 2 — WASM app hosted by the Blazor Gateway on http://localhost:5090
+dotnet run --project BlazorWasmFeatures --launch-profile http
+```
+
+Open http://localhost:5090/weather. The client fetches `api/weather` from the gateway origin,
+and the gateway proxies it to `BackendApi` via YARP. The proxy route/cluster (and the backend
+address) are configured with `ReverseProxy__*` environment variables in
+`BlazorWasmFeatures/Properties/launchSettings.json`.
 
 All packages are published on nuget.org, so no extra NuGet feeds are required.

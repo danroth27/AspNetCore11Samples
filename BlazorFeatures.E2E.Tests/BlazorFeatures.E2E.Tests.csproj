@@ -6,13 +6,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
+    <!-- The Components.Testing App host is marked [RequiresPreviewFeatures] in .NET 11. -->
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <!-- xUnit v3 ships its own runner; do not let the SDK auto-include xUnit v2. -->
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Preview 5 release, matching the rest of the sample repo. -->
-    <PackageReference Include="Microsoft.AspNetCore.Components.Testing" Version="11.0.0-preview.5.26302.115" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Testing" Version="11.0.0-preview.6.26359.118" />
     <PackageReference Include="Microsoft.Playwright.Xunit.v3" Version="1.58.0" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />
   </ItemGroup>
