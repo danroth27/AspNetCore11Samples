@@ -36,13 +36,10 @@
 }
 
 <div class="alert alert-info">
-    <strong>Observe it live:</strong>
-    <ol class="mb-0">
-        <li>Open the browser dev console — Blazor's client logging now runs at
-            <code>Debug</code> level because the server told it to.</li>
-        <li>Stop and restart the server — the reconnection UI retries with the configured
-            interval and retry count.</li>
-    </ol>
+    <strong>What this shows:</strong> the options above are the client startup settings this app
+    configured in C# with <code>WithBrowserOptions</code> — no <code>Blazor.start</code>
+    JavaScript. To watch one take effect at runtime, stop and restart the server: the
+    reconnection UI retries using the configured interval and retry count.
 </div>
 
 @code {
