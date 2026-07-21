@@ -49,3 +49,104 @@ Accept: application/json
 Accept-Encoding: gzip
 
 ###
+
+# =====================================================================
+# .NET 11 Preview 6 — ASP.NET Community Standup demos
+# =====================================================================
+
+### Unions: return type — Dog case (STJ serializes the active case)
+GET {{ApiFeatures_HostAddress}}/pets/0
+Accept: application/json
+
+###
+
+### Unions: return type — Cat case
+GET {{ApiFeatures_HostAddress}}/pets/1
+Accept: application/json
+
+###
+
+### Unions: OpenAPI describes the union return with anyOf: [Dog, Cat]
+# Look at components.schemas.Pet in the response.
+GET {{ApiFeatures_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
+### Unions: body param — reference existing pet (string case)
+POST {{ApiFeatures_HostAddress}}/pets/adopt
+Content-Type: application/json
+
+"Rex"
+
+###
+
+### Unions: body param — send a new Dog (object case)
+POST {{ApiFeatures_HostAddress}}/pets/adopt
+Content-Type: application/json
+
+{ "name": "Fido" }
+
+###
+
+### Async validation (backup): registered email is rejected by the async [UniqueEmail] rule
+POST {{ApiFeatures_HostAddress}}/register
+Content-Type: application/json
+
+{ "email": "admin@example.com", "displayName": "Admin" }
+
+###
+
+### Async validation (backup): a new email is accepted
+POST {{ApiFeatures_HostAddress}}/register
+Content-Type: application/json
+
+{ "email": "brand-new@example.com", "displayName": "Newbie" }
+
+###
+
+### Async validation (backup): weekend date rejected by async IAsyncValidatableObject
+POST {{ApiFeatures_HostAddress}}/reservations
+Content-Type: application/json
+
+{ "email": "guest@example.com", "date": "2026-07-25" }
+
+###
+
+### Async validation (backup): a weekday is accepted
+POST {{ApiFeatures_HostAddress}}/reservations
+Content-Type: application/json
+
+{ "email": "guest@example.com", "date": "2026-07-22" }
+
+###
+
+### CSRF: same-origin form POST is allowed (200)
+POST {{ApiFeatures_HostAddress}}/csrf/transfer
+Content-Type: application/x-www-form-urlencoded
+Sec-Fetch-Site: same-origin
+
+amount=100&toAccount=ACME-123
+
+###
+
+### CSRF: cross-site form POST is rejected automatically (403) — no token, no config
+POST {{ApiFeatures_HostAddress}}/csrf/transfer
+Content-Type: application/x-www-form-urlencoded
+Sec-Fetch-Site: cross-site
+Origin: https://evil.example
+
+amount=100&toAccount=ACME-123
+
+###
+
+### CSRF: opted-out endpoint (.DisableAntiforgery()) allows the cross-site POST (200)
+POST {{ApiFeatures_HostAddress}}/csrf/transfer-open
+Content-Type: application/x-www-form-urlencoded
+Sec-Fetch-Site: cross-site
+Origin: https://evil.example
+
+amount=100&toAccount=ACME-123
+
+###
+

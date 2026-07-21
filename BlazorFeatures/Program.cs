@@ -84,6 +84,22 @@ app.MapGet("/Culture/Set", (HttpContext context, string culture, string redirect
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    // Preview 6: configure client-side startup behavior from the server in C# instead
+    // of hand-writing Blazor.start JavaScript (#67337, #66393). The server serializes
+    // these into the page and the Blazor script applies them in the browser.
+    .WithBrowserOptions(options =>
+    {
+        // Client-side log level — visible in the browser dev console.
+        options.LogLevel = LogLevel.Debug;
+
+        // Interactive Server reconnection behavior (observe by stopping/restarting
+        // the server and watching the reconnection UI).
+        options.Server.ReconnectionMaxRetries = 10;
+        options.Server.ReconnectionRetryInterval = TimeSpan.FromSeconds(1.5);
+
+        // Preserve the DOM across enhanced navigations.
+        options.Ssr.PreserveDom = true;
+    });
 
 app.Run();

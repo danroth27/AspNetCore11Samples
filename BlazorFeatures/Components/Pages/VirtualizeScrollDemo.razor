@@ -1,0 +1,85 @@
+@page "/virtualize-scroll"
+@rendermode InteractiveServer
+
+<PageTitle>Virtualize scroll-to-item</PageTitle>
+
+<h1>Virtualize can scroll to an item (.NET 11 Preview 6)</h1>
+
+<p class="lead">
+    <code>Virtualize&lt;TItem&gt;</code> can now open at a specific item and scroll to any
+    item on demand (<a href="https://github.com/dotnet/aspnetcore/pull/66753" target="_blank">#66753</a>).
+</p>
+
+<ul>
+    <li><code>InitialIndex</code> positions the list at a given item on the first interactive
+        render — the list opens there with no flash of the first item.</li>
+    <li><code>ScrollToIndexAsync(int index, CancellationToken)</code> scrolls to an item any
+        time after the first render and completes when the target is aligned to the top.</li>
+</ul>
+
+<p>
+    This list of <strong>@products.Count</strong> products opens at item
+    <strong>#@InitialIndexValue</strong> thanks to <code>InitialIndex</code>.
+</p>
+
+<div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+    <button class="btn btn-primary" @onclick="GoToTop">Back to top</button>
+    <button class="btn btn-secondary" @onclick="GoToEnd">Jump to last item</button>
+    <div class="input-group" style="width: auto;">
+        <span class="input-group-text">Go to #</span>
+        <input class="form-control" type="number" @bind="targetIndex" style="width: 8rem;" />
+        <button class="btn btn-outline-primary" @onclick="GoToTarget">Scroll</button>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(statusMessage))
+{
+    <div class="alert alert-info py-2">@statusMessage</div>
+}
+
+<div style="height: 500px; overflow-y: auto; border: 2px solid #dee2e6; border-radius: 8px; padding: 8px;">
+    <Virtualize TItem="Product" Items="products" InitialIndex="InitialIndexValue" @ref="list">
+        <div class="card mb-2">
+            <div class="card-body py-2 px-3 d-flex justify-content-between">
+                <strong>#@context.Id — @context.Name</strong>
+                <span class="text-muted">@context.Price.ToString("C")</span>
+            </div>
+        </div>
+    </Virtualize>
+</div>
+
+@code {
+    const int InitialIndexValue = 500;
+
+    Virtualize<Product> list = default!;
+    List<Product> products = Enumerable.Range(0, 10_000)
+        .Select(i => new Product(i, $"Product {i}", 9.99m + i))
+        .ToList();
+
+    int targetIndex = 2_500;
+    string? statusMessage;
+
+    // ScrollToIndexAsync throws before the first interactive render; these handlers
+    // only run from button clicks, which happen after that render.
+    async Task GoToTop()
+    {
+        await list.ScrollToIndexAsync(0);
+        statusMessage = "Scrolled to the top (index 0).";
+    }
+
+    async Task GoToEnd()
+    {
+        var last = products.Count - 1;
+        await list.ScrollToIndexAsync(last);
+        statusMessage = $"Scrolled to the last item (index {last}).";
+    }
+
+    async Task GoToTarget()
+    {
+        // Out-of-range indexes are clamped to the valid range by the framework.
+        await list.ScrollToIndexAsync(targetIndex);
+        statusMessage = $"Scrolled to index {targetIndex}.";
+    }
+
+    record Product(int Id, string Name, decimal Price);
+}

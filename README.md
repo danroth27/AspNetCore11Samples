@@ -97,6 +97,14 @@ Web API (minimal APIs) demonstrating framework features:
 - **Enum parameter naming in OpenAPI** (Preview 5) — Non-body enum params keep their C# names; array schema IDs use valid names
 - **Kestrel trailer header timeout** (Preview 5) — `RequestHeadersTimeout` applies to HTTP/2 and HTTP/3 trailer frames
 
+
+### SignalRFeatures and SignalRClient
+SignalR authentication-refresh demo for .NET 11 Preview 6:
+
+- **Authentication refresh** (Preview 6, [dotnet/aspnetcore#67400](https://github.com/dotnet/aspnetcore/pull/67400)) — the server enables `EnableAuthenticationRefresh` on `/clock`, and the .NET client refreshes its bearer token before expiry without dropping the hub connection. Tokens last 45 seconds so refresh is visible during a short run.
+- `SignalRFeatures` hosts the JWT bearer-secured `/clock` hub and `/token?user=alice` issuer on `http://localhost:5110`.
+- `SignalRClient` streams clock ticks for 75 seconds and prints auth-refresh callbacks plus a success summary.
+
 ### BackendApi
 Minimal Web API that serves weather data at `/api/weather`. It is the backend service that
 `BlazorWasmFeatures` calls through the Blazor Gateway's YARP proxy. It has **no CORS
@@ -112,6 +120,25 @@ dotnet build
 
 # Run a project, e.g. the Blazor Web App:
 dotnet run --project BlazorFeatures
+```
+
+
+### SignalR authentication refresh
+
+Run the server and client in separate terminals. The client output should show ticks continuing across at least one 45-second token expiry and an `AUTH REFRESHED` line without any reconnect or close.
+
+```pwsh
+# Terminal 1 — SignalR server on http://localhost:5110
+dotnet run --project SignalRFeatures --launch-profile http
+
+# Terminal 2 — .NET SignalR client for 75 seconds
+dotnet run --project SignalRClient -- --server http://localhost:5110 --user alice --duration-seconds 75
+```
+
+To show the previous behavior for contrast, disable client auto-refresh. Because the hub also sets `CloseOnAuthenticationExpiration`, the connection closes when the 45-second token expires:
+
+```pwsh
+dotnet run --project SignalRClient -- --server http://localhost:5110 --user alice --duration-seconds 55 --no-refresh
 ```
 
 ### Blazor Gateway backend proxy (no CORS)
