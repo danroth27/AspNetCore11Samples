@@ -69,8 +69,8 @@ app.UseRequestLocalization();
 app.UseSession();
 // No app.UseAntiforgery() call is needed. .NET 11 automatically rejects unsafe
 // cross-origin requests based on the browser's Sec-Fetch-Site/Origin headers
-// (dotnet/aspnetcore #66585), which protects the SSR forms in this app — so the
-// Blazor Web App template no longer calls app.UseAntiforgery().
+// (dotnet/aspnetcore #66585), which protects the SSR forms in this app even
+// without the token-based antiforgery middleware.
 
 // Culture switcher target for the validation demos. Writes the cookie that the
 // CookieRequestCultureProvider above reads on subsequent requests.
