@@ -60,7 +60,7 @@ and features. Demos are grouped by the preview that introduced them.
 - **Automatic CSRF protection** (`/csrf-protection`) — an SSR form protected automatically by the
   new cross-origin checks (`Sec-Fetch-Site`/`Origin`) with no antiforgery token and no
   `app.UseAntiforgery()` ([dotnet/aspnetcore#66585](https://github.com/dotnet/aspnetcore/pull/66585)).
-  The separate `AttackerSite` project forges a cross-site POST against this form.
+  The separate `CsrfAttackerSite` project forges a cross-site POST against this form.
 
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
@@ -124,7 +124,7 @@ Minimal Web API that serves weather data at `/api/weather`. It is the backend se
 configuration on purpose** — the browser only talks to the gateway (same origin), and the
 gateway-to-backend hop happens server-side.
 
-### AttackerSite
+### CsrfAttackerSite
 A deliberately separate origin for the automatic CSRF demo. It serves a single static page
 (a fake "you won a prize" site) whose hidden form posts a funds transfer to `BlazorFeatures`
 at `http://localhost:5059/csrf-protection`. Browse to it at **`http://127.0.0.1:8080`** —
@@ -154,7 +154,7 @@ Run the Blazor app and the attacker site in separate terminals, then browse to t
 dotnet run --project BlazorFeatures --launch-profile http
 
 # Terminal 2 — the attacker site on http://127.0.0.1:8080
-dotnet run --project AttackerSite --launch-profile http
+dotnet run --project CsrfAttackerSite --launch-profile http
 ```
 
 Submitting the transfer form on `/csrf-protection` directly (same-origin) succeeds. Clicking
