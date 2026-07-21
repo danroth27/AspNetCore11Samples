@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>totally-legit-prizes.example</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; text-align: center; }
+        .btn { font-size: 1.25rem; padding: 0.75rem 1.5rem; cursor: pointer; }
+        .note { margin-top: 2.5rem; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; color: #444; font-size: 0.9rem; text-align: left; }
+        code { background: #f2f2f2; padding: 0 0.25rem; border-radius: 3px; }
+    </style>
+</head>
+
+<body>
+    <h1>🎉 You've won a $1,000 gift card! 🎉</h1>
+    <p>Click below to claim your prize before it expires!</p>
+
+    <!--
+        This "prize" button secretly submits a funds-transfer form to the bank app
+        on ANOTHER origin (http://localhost:5059). That's the CSRF attack: the victim's
+        browser sends the request with their cookies. Because it's cross-origin, the
+        browser adds `Sec-Fetch-Site: cross-site`, and .NET 11 rejects it automatically.
+    -->
+    <form method="post" action="http://localhost:5059/csrf-protection">
+        <input type="hidden" name="_handler" value="TransferForm" />
+        <input type="hidden" name="transfer.Recipient" value="ATTACKER-999" />
+        <input type="hidden" name="transfer.Amount" value="5000" />
+        <button class="btn" type="submit">Claim your prize 🎁</button>
+    </form>
+
+    <div class="note">
+        <strong>This is a demo "attacker" site.</strong> Browse to it at
+        <code>http://127.0.0.1:8080</code> — <code>127.0.0.1</code> is a <em>different site</em>
+        from the bank's <code>localhost</code>, so the request is genuinely cross-site. The button
+        submits a hidden form to the bank app at <code>http://localhost:5059/csrf-protection</code>.
+        Because it comes from another site, the browser adds <code>Sec-Fetch-Site: cross-site</code>,
+        and .NET 11's automatic CSRF protection rejects it with <code>400</code>. Open the browser
+        dev tools <strong>Network</strong> tab (enable "Preserve log") and inspect the request
+        headers to see it.
+    </div>
+</body>
+
+</html>

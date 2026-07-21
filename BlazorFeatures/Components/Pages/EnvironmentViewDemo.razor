@@ -1,11 +1,11 @@
-@page "/environment-boundary"
+@page "/environment-view"
 @rendermode InteractiveServer
 
-<PageTitle>EnvironmentBoundary Demo</PageTitle>
+<PageTitle>EnvironmentView Demo</PageTitle>
 
-<h1>EnvironmentBoundary Component</h1>
+<h1>EnvironmentView Component</h1>
 
-<p>The <code>EnvironmentBoundary</code> component conditionally renders content based on the hosting environment.</p>
+<p>The <code>EnvironmentView</code> component conditionally renders content based on the hosting environment.</p>
 
 <h2>Current Environment</h2>
 <p>Your app is running in: <strong>@Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")</strong></p>
@@ -13,33 +13,33 @@
 <h2>Demo</h2>
 
 <h3>Include="Development"</h3>
-<EnvironmentBoundary Include="Development">
+<EnvironmentView Include="Development">
     <div class="alert alert-warning">
         ⚠️ Debug mode enabled - This only shows in Development
     </div>
-</EnvironmentBoundary>
+</EnvironmentView>
 
 <h3>Include="Development,Staging"</h3>
-<EnvironmentBoundary Include="Development,Staging">
+<EnvironmentView Include="Development,Staging">
     <div class="alert alert-info">
         ℹ️ Pre-production environment - Shows in Development or Staging
     </div>
-</EnvironmentBoundary>
+</EnvironmentView>
 
 <h3>Exclude="Production"</h3>
-<EnvironmentBoundary Exclude="Production">
+<EnvironmentView Exclude="Production">
     <div class="alert alert-secondary">
         🕐 Current time: @DateTime.Now.ToString("HH:mm:ss") - Hidden in Production
     </div>
-</EnvironmentBoundary>
+</EnvironmentView>
 
 <h3>Include="Production"</h3>
-<EnvironmentBoundary Include="Production">
+<EnvironmentView Include="Production">
     <div class="alert alert-success">
         ✅ Production environment - Only shows in Production
     </div>
-</EnvironmentBoundary>
+</EnvironmentView>
 
 @code {
-    // No code needed - EnvironmentBoundary uses IHostEnvironment internally
+    // No code needed - EnvironmentView uses IHostEnvironment internally
 }

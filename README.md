@@ -10,7 +10,7 @@ Blazor Web App (Interactive Server/WebAssembly) demonstrating new Blazor compone
 and features. Demos are grouped by the preview that introduced them.
 
 **Preview 1**
-- **EnvironmentBoundary** (`/environment-boundary`) — Conditional rendering based on hosting environment
+- **EnvironmentView** (`/environment-view`) — Conditional rendering based on hosting environment
 - **Label Component** (`/label-demo`) — Accessible form labels with `[Display]` attribute support
 - **DisplayName Component** (`/displayname-demo`) — Display property names from metadata attributes
 - **QuickGrid OnRowClick** (`/quickgrid-onrowclick`) — Row click event handling
@@ -60,6 +60,7 @@ and features. Demos are grouped by the preview that introduced them.
 - **Automatic CSRF protection** (`/csrf-protection`) — an SSR form protected automatically by the
   new cross-origin checks (`Sec-Fetch-Site`/`Origin`) with no antiforgery token and no
   `app.UseAntiforgery()` ([dotnet/aspnetcore#66585](https://github.com/dotnet/aspnetcore/pull/66585)).
+  The separate `AttackerSite` project forges a cross-site POST against this form.
 
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
@@ -123,6 +124,14 @@ Minimal Web API that serves weather data at `/api/weather`. It is the backend se
 configuration on purpose** — the browser only talks to the gateway (same origin), and the
 gateway-to-backend hop happens server-side.
 
+### AttackerSite
+A deliberately separate origin for the automatic CSRF demo. It serves a single static page
+(a fake "you won a prize" site) whose hidden form posts a funds transfer to `BlazorFeatures`
+at `http://localhost:5059/csrf-protection`. Browse to it at **`http://127.0.0.1:8080`** —
+`127.0.0.1` is a different *site* from the bank's `localhost`, so the browser marks the request
+`Sec-Fetch-Site: cross-site` and .NET 11's automatic CSRF protection rejects it with `400`.
+See [Automatic CSRF protection demo](#automatic-csrf-protection-demo) for how to run it.
+
 ## Running the Samples
 
 Requires the .NET 11 Preview 6 SDK (`11.0.100-preview.6.26359.118`) or later.
@@ -134,6 +143,24 @@ dotnet build
 dotnet run --project BlazorFeatures
 ```
 
+
+### Automatic CSRF protection demo
+
+Run the Blazor app and the attacker site in separate terminals, then browse to the attacker at
+**`http://127.0.0.1:8080`** (note `127.0.0.1`, not `localhost`, so it's a different site):
+
+```pwsh
+# Terminal 1 — the "bank" app on http://localhost:5059
+dotnet run --project BlazorFeatures --launch-profile http
+
+# Terminal 2 — the attacker site on http://127.0.0.1:8080
+dotnet run --project AttackerSite --launch-profile http
+```
+
+Submitting the transfer form on `/csrf-protection` directly (same-origin) succeeds. Clicking
+"Claim your prize" on the attacker page posts the same form from a different site; open the
+browser dev tools **Network** tab (enable "Preserve log") to see the request carry
+`Sec-Fetch-Site: cross-site` and get rejected with **400**.
 
 ### SignalR authentication refresh
 
