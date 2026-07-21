@@ -50,6 +50,16 @@ and features. Demos are grouped by the preview that introduced them.
   See the design note: [aspnet/specs#782](https://github.com/aspnet/specs/pull/782).
   The `Toast` component and `ToastMessage` union live in the shared `SharedComponents`
   Razor Class Library (referenced by both the Server and WebAssembly apps).
+- **Virtualize scroll-to-item** (`/virtualize-scroll`) — `Virtualize<TItem>.InitialIndex`
+  opens a large list at a given item, and `ScrollToIndexAsync` scrolls to any item on demand
+  ([dotnet/aspnetcore#66753](https://github.com/dotnet/aspnetcore/pull/66753)).
+- **Configure client from server** (`/browser-options`) — `WithBrowserOptions` sets client-side
+  startup behavior (log level, reconnection, DOM preservation) from the server in C# instead of
+  hand-written `Blazor.start` JavaScript; the page reads the resolved options with
+  `HttpContext.GetBrowserOptions()` ([dotnet/aspnetcore#67337](https://github.com/dotnet/aspnetcore/pull/67337)).
+- **Automatic CSRF protection** (`/csrf-protection`) — an SSR form protected automatically by the
+  new cross-origin checks (`Sec-Fetch-Site`/`Origin`) with no antiforgery token and no
+  `app.UseAntiforgery()` ([dotnet/aspnetcore#66585](https://github.com/dotnet/aspnetcore/pull/66585)).
 
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
@@ -96,6 +106,8 @@ Web API (minimal APIs) demonstrating framework features:
 - **Endpoint filters observe binding failures** (Preview 4) — Filter pipeline runs even when parameter binding fails
 - **Enum parameter naming in OpenAPI** (Preview 5) — Non-body enum params keep their C# names; array schema IDs use valid names
 - **Kestrel trailer header timeout** (Preview 5) — `RequestHeadersTimeout` applies to HTTP/2 and HTTP/3 trailer frames
+- **C# unions** (Preview 6) — union return types are described with `anyOf` in OpenAPI and serialized by their active case (`GET /pets/{id}`); a union body binds by JSON token type (`POST /pets/adopt`)
+- **Async validation** (Preview 6) — `AsyncValidationAttribute` (`POST /register`) and `IAsyncValidatableObject` (`POST /reservations`) run during minimal-API validation via `AddValidation()`
 
 
 ### SignalRFeatures and SignalRClient

@@ -49,7 +49,7 @@ app.MapPost("/token", (string user, DemoTokenService tokens) =>
 
 app.MapHub<ClockHub>("/clock", options =>
 {
-    // Preview 6 (#67400): let the .NET SignalR client refresh auth without reconnecting.
+    // dotnet/aspnetcore #67400: let the .NET SignalR client refresh auth without reconnecting.
     options.EnableAuthenticationRefresh = true;
     options.CloseOnAuthenticationExpiration = true;
     options.OnAuthenticationRefresh = context =>
@@ -163,7 +163,7 @@ public sealed class DemoTokenService
     private const string Audience = "SignalRAuthRefreshDemoClient";
     private static readonly TimeSpan Lifetime = TimeSpan.FromSeconds(45);
     private static readonly SymmetricSecurityKey SigningKey = new(
-        Encoding.UTF8.GetBytes("SignalR auth refresh demo key for .NET 11 Preview 6."));
+        Encoding.UTF8.GetBytes("SignalR authentication refresh demo signing key (.NET 11)."));
 
     public TokenResponse CreateToken(string user)
     {

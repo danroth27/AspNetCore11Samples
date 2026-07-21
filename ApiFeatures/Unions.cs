@@ -1,16 +1,14 @@
-// .NET 11 Preview 6 — C# unions in ASP.NET Core.
+// C# unions in ASP.NET Core (dotnet/aspnetcore #66951).
 //
 // C# union types are a preview language feature in .NET 11, and System.Text.Json
 // serializes them natively. Because ASP.NET Core uses System.Text.Json for JSON,
 // unions work as JSON request bodies and return types across Minimal APIs, MVC,
-// SignalR, and Blazor with no ASP.NET-specific configuration (dotnet/aspnetcore #66951).
+// SignalR, and Blazor with no ASP.NET-specific configuration.
 //
 // For OpenAPI, an endpoint that returns a union is described with an `anyOf` schema
 // listing each case type (dotnet/aspnetcore #67001). Union cases don't carry a
 // `$type` discriminator, so a case like `Dog` reuses the standalone
 // `#/components/schemas/Dog` component instead of a duplicated, prefixed one.
-
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace ApiFeatures;
 
@@ -29,9 +27,9 @@ public union Pet(Dog, Cat);
 // Object token, so as a body they'd need a custom JsonTypeClassifier to disambiguate.)
 public union PetInput(string, Dog);
 
-public static class Preview6Unions
+public static class UnionEndpoints
 {
-    public static IEndpointRouteBuilder MapUnionDemo(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapUnions(this IEndpointRouteBuilder app)
     {
         // Union RETURN type. The active case is serialized on the way out and the
         // endpoint is described with `anyOf: [Dog, Cat]` in the OpenAPI document.

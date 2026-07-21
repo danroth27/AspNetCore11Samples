@@ -19,8 +19,7 @@ builder.Services.AddOpenApi(options =>
 });
 builder.Services.AddValidation();
 
-// Preview 6: async validation backup demo — services resolved from the
-// ValidationContext inside the async validators.
+// Services resolved from the ValidationContext inside the async validators.
 builder.Services.AddSingleton<ApiFeatures.IUserService, ApiFeatures.UserService>();
 builder.Services.AddSingleton<ApiFeatures.IRoomService, ApiFeatures.RoomService>();
 
@@ -271,10 +270,9 @@ app.MapGet("/todos", () => TypedResults.Ok<Todo[]>(new[]
     .WithName("GetTodos")
     .WithDescription("Returns Todo[] — array schema reference uses TodoArray");
 
-// Preview 6 standup demos.
-app.MapUnionDemo();          // C# unions in Minimal APIs (anyOf in OpenAPI)
-app.MapAsyncValidationDemo(); // Async validation for Minimal APIs (backup demo)
-app.MapCsrfDemo();           // Automatic cross-origin (CSRF) protection
+// Endpoints demonstrating C# unions and async validation in minimal APIs.
+app.MapUnions();          // C# unions in minimal APIs (anyOf in OpenAPI)
+app.MapAsyncValidation(); // Async validation for minimal APIs
 
 app.Run();
 

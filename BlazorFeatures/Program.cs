@@ -67,7 +67,10 @@ app.UseHttpsRedirection();
 
 app.UseRequestLocalization();
 app.UseSession();
-app.UseAntiforgery();
+// No app.UseAntiforgery() call is needed. .NET 11 automatically rejects unsafe
+// cross-origin requests based on the browser's Sec-Fetch-Site/Origin headers
+// (dotnet/aspnetcore #66585), which protects the SSR forms in this app — so the
+// Blazor Web App template no longer calls app.UseAntiforgery().
 
 // Culture switcher target for the validation demos. Writes the cookie that the
 // CookieRequestCultureProvider above reads on subsequent requests.
@@ -85,9 +88,9 @@ app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
-    // Preview 6: configure client-side startup behavior from the server in C# instead
-    // of hand-writing Blazor.start JavaScript (#67337, #66393). The server serializes
-    // these into the page and the Blazor script applies them in the browser.
+    // Configure client-side startup behavior from the server in C# instead of
+    // hand-writing Blazor.start JavaScript (dotnet/aspnetcore #67337). The server
+    // serializes these into the page and the Blazor script applies them in the browser.
     .WithBrowserOptions(options =>
     {
         // Client-side log level — visible in the browser dev console.
@@ -103,3 +106,4 @@ app.MapRazorComponents<App>()
     });
 
 app.Run();
+

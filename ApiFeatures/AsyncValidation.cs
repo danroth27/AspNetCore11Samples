@@ -1,13 +1,10 @@
-// .NET 11 Preview 6 — Async validation for minimal APIs (BACKUP DEMO).
+// Async validation for minimal APIs (dotnet/aspnetcore #66487, #67183).
 //
-// Youssef owns this topic in the standup; this is a standby in case his demo hits
-// issues. Minimal API validation now supports asynchronous validators end-to-end
-// (dotnet/aspnetcore #66487, #67183). Preview 6 adds async DataAnnotations APIs
-// (`AsyncValidationAttribute`, `IAsyncValidatableObject`) and
-// `Microsoft.Extensions.Validation` runs them when an endpoint validates a request.
-//
-// Register `builder.Services.AddValidation();` and the framework validates the
-// request before the endpoint runs. See Program.cs for registration + endpoints.
+// Minimal API validation supports asynchronous validators end-to-end. The base
+// libraries add async DataAnnotations APIs (`AsyncValidationAttribute`,
+// `IAsyncValidatableObject`) and `Microsoft.Extensions.Validation` runs them when
+// an endpoint validates a request. Register `builder.Services.AddValidation();`
+// and the framework validates the request before the endpoint runs.
 
 using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
@@ -107,9 +104,9 @@ public sealed class ReservationRequest : IAsyncValidatableObject
     }
 }
 
-public static class Preview6AsyncValidation
+public static class AsyncValidationEndpoints
 {
-    public static IEndpointRouteBuilder MapAsyncValidationDemo(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapAsyncValidation(this IEndpointRouteBuilder app)
     {
         // Async attribute: POST an already-registered email (e.g. admin@example.com)
         // to see the framework reject it before the handler runs.

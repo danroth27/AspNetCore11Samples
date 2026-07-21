@@ -1,0 +1,80 @@
+@page "/csrf-protection"
+
+<PageTitle>Automatic CSRF protection</PageTitle>
+
+<h1>Automatic CSRF protection (.NET 11)</h1>
+
+<p class="lead">
+    .NET 11 automatically rejects unsafe cross-origin requests based on the browser's
+    <code>Sec-Fetch-Site</code>/<code>Origin</code> headers
+    (<a href="https://github.com/dotnet/aspnetcore/pull/66585" target="_blank">#66585</a>).
+    It's on by default across Minimal APIs, MVC, Razor Pages, and Blazor.
+</p>
+
+<p>
+    The transfer form below is a classic CSRF target. It has <strong>no antiforgery token</strong>,
+    and this app <strong>doesn't call <code>app.UseAntiforgery()</code></strong> — yet a malicious
+    cross-site page can't submit it on a user's behalf. A same-origin submit (like the one below)
+    is allowed; a cross-origin browser POST is rejected automatically.
+</p>
+
+<div class="form-card">
+    <EditForm Model="transfer" Enhance OnValidSubmit="HandleSubmit" FormName="TransferForm">
+        <DataAnnotationsValidator />
+
+        <fieldset disabled="@submitted">
+            <div class="form-group">
+                <label for="recipient">Recipient account</label>
+                <InputText id="recipient" class="form-control" @bind-Value="transfer!.Recipient" />
+                <ValidationMessage For="() => transfer!.Recipient" />
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Amount</label>
+                <InputNumber id="amount" class="form-control" @bind-Value="transfer!.Amount" />
+                <ValidationMessage For="() => transfer!.Amount" />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Transfer</button>
+        </fieldset>
+    </EditForm>
+</div>
+
+@if (submitted)
+{
+    <div class="alert alert-success mt-3">
+        Transferred @transfer!.Amount.ToString("C") to <strong>@transfer!.Recipient</strong>.
+    </div>
+}
+
+<h2 class="mt-4">How it's protected</h2>
+<ul>
+    <li>A same-origin request carries <code>Sec-Fetch-Site: same-origin</code> and is allowed.</li>
+    <li>A cross-origin browser request carries <code>Sec-Fetch-Site: cross-site</code> and is rejected before the handler runs.</li>
+    <li>Opt an endpoint out with <code>.DisableAntiforgery()</code> (Minimal APIs) or
+        <code>[IgnoreAntiforgeryToken]</code> (MVC); disable it app-wide with the
+        <code>DisableCsrfProtection</code> configuration key; or register a custom
+        <code>ICsrfProtection</code> for full control of the trust decision.</li>
+</ul>
+
+@code {
+    // SSR EditForm (no @rendermode). The posted model is protected by the automatic
+    // cross-origin (CSRF) checks, so no antiforgery token or UseAntiforgery is needed.
+    [SupplyParameterFromForm]
+    private TransferModel? transfer { get; set; }
+
+    private bool submitted;
+
+    protected override void OnInitialized() => transfer ??= new();
+
+    private void HandleSubmit() => submitted = true;
+
+    public sealed class TransferModel
+    {
+        [Required]
+        public string Recipient { get; set; } = "";
+
+        [Range(0.01, 1_000_000, ErrorMessage = "Enter an amount greater than zero.")]
+        public decimal Amount { get; set; } = 100;
+    }
+}
