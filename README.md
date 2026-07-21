@@ -118,6 +118,13 @@ SignalR authentication-refresh demo for .NET 11 Preview 6:
 - `SignalRFeatures` hosts the JWT bearer-secured `/clock` hub and `/token?user=alice` issuer on `http://localhost:5110`.
 - `SignalRClient` streams clock ticks for 75 seconds and prints auth-refresh callbacks plus a success summary.
 
+**Security notes (this sample deliberately simplifies auth; don't copy these into production):**
+
+- The `/token` endpoint issues a signed JWT for any requested username **with no credential check** — it stands in for a real sign-in. Real apps authenticate the user (ASP.NET Core Identity, Microsoft Entra ID, or another IdP) and issue tokens from that trusted source; validate them with `JwtBearerOptions.Authority` instead of a hardcoded key.
+- The signing key is **hardcoded in source** for self-containment. Real apps keep keys in configuration/secret management and don't self-issue tokens.
+- The token is sent in the **query string** (required for WebSockets/SSE) and this sample runs over plain **HTTP** on localhost. Production must use **HTTPS**, because query strings are commonly logged — see [SignalR security: access token logging](https://learn.microsoft.com/aspnet/core/signalr/security#access-token-logging).
+- What the sample does follow: `[Authorize]` on the hub, full token validation (issuer/audience/key/lifetime), the query-string token restricted to the hub path, and `CloseOnAuthenticationExpiration` so a connection that isn't refreshed is closed at token expiry.
+
 ### BackendApi
 Minimal Web API that serves weather data at `/api/weather`. It is the backend service that
 `BlazorWasmFeatures` calls through the Blazor Gateway's YARP proxy. It has **no CORS

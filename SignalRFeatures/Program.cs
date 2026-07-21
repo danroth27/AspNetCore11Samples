@@ -16,6 +16,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.SaveToken = true;
         options.TokenValidationParameters = DemoTokenService.CreateValidationParameters();
+        // WebSockets and Server-Sent Events can't send an Authorization header, so the
+        // SignalR client sends the access token as a query string parameter. Read it
+        // only for the hub path. IMPORTANT: use HTTPS in production — query strings are
+        // frequently written to server/proxy logs. This sample uses plain HTTP for
+        // localhost convenience only. See
+        // https://learn.microsoft.com/aspnet/core/signalr/security#access-token-logging
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -41,6 +47,12 @@ app.UseAuthorization();
 
 app.MapGet("/", () => "SignalR authentication refresh demo. POST /token?user=alice, then connect to /clock.");
 
+// DEMO ONLY — this is NOT how to authenticate users. It issues a signed JWT for
+// whatever username is requested, with no credential check, so the sample can run
+// without a real identity provider. Treat it as a stand-in for "the user has already
+// signed in." A real app must authenticate the user (ASP.NET Core Identity, Microsoft
+// Entra ID, or another IdP), issue tokens from that trusted source, and validate them
+// against the provider's Authority — never mint tokens from an unauthenticated endpoint.
 app.MapPost("/token", (string user, DemoTokenService tokens) =>
 {
     var token = tokens.CreateToken(user);
@@ -63,6 +75,9 @@ app.MapHub<ClockHub>("/clock", options =>
             context.NewUser.Identity?.Name ?? "<anonymous>",
             context.NewExpiration);
 
+        // Returning true allows this connection to refresh its authentication. This is
+        // where a real app would enforce per-connection policy (for example, re-check
+        // that the user is still permitted, or deny refresh after some absolute limit).
         return ValueTask.FromResult(true);
     };
 });
@@ -157,6 +172,11 @@ public sealed record TokenResponse(
     DateTimeOffset ExpiresAt,
     int ExpiresInSeconds);
 
+// DEMO ONLY token issuer/validator. It self-issues JWTs signed with a hardcoded
+// symmetric key so the sample is self-contained and needs no external identity
+// provider. A real app must NOT hardcode signing keys or self-issue tokens like this:
+// authenticate against an IdP and set JwtBearerOptions.Authority to validate tokens
+// from that trusted source. Secrets belong in configuration/secret management, not source.
 public sealed class DemoTokenService
 {
     private const string Issuer = "SignalRAuthRefreshDemo";
