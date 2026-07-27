@@ -94,7 +94,7 @@ app.MapRazorComponents<App>()
     .WithBrowserOptions(options =>
     {
         // Client-side log level — visible in the browser dev console.
-        options.LogLevel = LogLevel.Debug;
+        options.LogLevel = LogLevel.Information;
 
         // Interactive Server reconnection behavior (observe by stopping/restarting
         // the server and watching the reconnection UI).

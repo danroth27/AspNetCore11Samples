@@ -120,10 +120,11 @@ SignalR authentication-refresh demo for .NET 11 Preview 6:
 
 **Security notes (this sample deliberately simplifies auth; don't copy these into production):**
 
-- The `/token` endpoint issues a signed JWT for any requested username **with no credential check** — it stands in for a real sign-in. Real apps authenticate the user (ASP.NET Core Identity, Microsoft Entra ID, or another IdP) and issue tokens from that trusted source; validate them with `JwtBearerOptions.Authority` instead of a hardcoded key.
-- The signing key is **hardcoded in source** for self-containment. Real apps keep keys in configuration/secret management and don't self-issue tokens.
-- The token is sent in the **query string** (required for WebSockets/SSE) and this sample runs over plain **HTTP** on localhost. Production must use **HTTPS**, because query strings are commonly logged — see [SignalR security: access token logging](https://learn.microsoft.com/aspnet/core/signalr/security#access-token-logging).
-- What the sample does follow: `[Authorize]` on the hub, full token validation (issuer/audience/key/lifetime), the query-string token restricted to the hub path, and `CloseOnAuthenticationExpiration` so a connection that isn't refreshed is closed at token expiry.
+- The `/token` endpoint issues a signed JWT for any requested username **with no credential check** — it stands in for a real sign-in. It is registered **only in Development** so a copy of this code can't expose it when deployed. Real apps authenticate the user (ASP.NET Core Identity, Microsoft Entra ID, or another IdP) and issue tokens from that trusted source; validate them with `JwtBearerOptions.Authority` instead of a local key.
+- The signing key is **generated per process** with `RandomNumberGenerator.GetBytes(32)`, so **no key material is checked into this repo** — the same approach used by the SignalR [`JwtSample`](https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/samples/JwtSample/Startup.cs) in `dotnet/aspnetcore`. Restarting the server invalidates tokens from the previous run.
+- The sample runs over plain **HTTP** on localhost. Production must use **HTTPS**. Browser clients on WebSockets/SSE can't set an `Authorization` header and send the token in the query string, which is commonly logged — see [SignalR security: access token logging](https://learn.microsoft.com/aspnet/core/signalr/security#access-token-logging). (The .NET client used here sends an `Authorization` header instead.)
+- **Enabling `EnableAuthenticationRefresh` opts a connection out of SignalR's built-in "reject if the user changed" hardening** — the app owns that policy. This sample's `OnAuthenticationRefresh` compares the `sub` claim of `PreviousUser` and `NewUser` and rejects any refresh that would re-bind a live connection to a different identity.
+- What the sample does follow: `[Authorize]` on the hub, full token validation (issuer/audience/key/lifetime), the query-string token restricted to the hub path, an identity check on refresh, and `CloseOnAuthenticationExpiration` so a connection that isn't refreshed is closed at token expiry.
 
 ### BackendApi
 Minimal Web API that serves weather data at `/api/weather`. It is the backend service that
@@ -185,6 +186,12 @@ To show the previous behavior for contrast, disable client auto-refresh. Because
 
 ```pwsh
 dotnet run --project SignalRClient -- --server http://localhost:5110 --user alice --duration-seconds 55 --no-refresh
+```
+
+To show the identity check, have the client request its *refresh* token for a different user. The server's `OnAuthenticationRefresh` compares the `sub` claim and rejects the refresh with `403`, so the connection is never re-bound to `bob`:
+
+```pwsh
+dotnet run --project SignalRClient -- --server http://localhost:5110 --user alice --refresh-as bob --duration-seconds 55
 ```
 
 ### Blazor Gateway backend proxy (no CORS)

@@ -19,20 +19,20 @@
 </p>
 
 <div class="form-card">
-    <EditForm Model="transfer" Enhance OnValidSubmit="HandleSubmit" FormName="TransferForm">
+    <EditForm Model="Transfer" Enhance OnValidSubmit="HandleSubmit" FormName="TransferForm">
         <DataAnnotationsValidator />
 
         <fieldset disabled="@submitted">
             <div class="form-group">
                 <label for="recipient">Recipient account</label>
-                <InputText id="recipient" class="form-control" @bind-Value="transfer!.Recipient" />
-                <ValidationMessage For="() => transfer!.Recipient" />
+                <InputText id="recipient" class="form-control" @bind-Value="Transfer!.Recipient" />
+                <ValidationMessage For="() => Transfer!.Recipient" />
             </div>
 
             <div class="form-group">
                 <label for="amount">Amount</label>
-                <InputNumber id="amount" class="form-control" @bind-Value="transfer!.Amount" />
-                <ValidationMessage For="() => transfer!.Amount" />
+                <InputNumber id="amount" class="form-control" @bind-Value="Transfer!.Amount" />
+                <ValidationMessage For="() => Transfer!.Amount" />
             </div>
 
             <button type="submit" class="btn btn-primary">Transfer</button>
@@ -43,7 +43,7 @@
 @if (submitted)
 {
     <div class="alert alert-success mt-3">
-        Transferred @transfer!.Amount.ToString("C") to <strong>@transfer!.Recipient</strong>.
+        Transferred @Transfer!.Amount.ToString("C") to <strong>@Transfer!.Recipient</strong>.
     </div>
 }
 
@@ -61,11 +61,11 @@
     // SSR EditForm (no @rendermode). The posted model is protected by the automatic
     // cross-origin (CSRF) checks, so no antiforgery token or UseAntiforgery is needed.
     [SupplyParameterFromForm]
-    private TransferModel? transfer { get; set; }
+    private TransferModel? Transfer { get; set; }
 
     private bool submitted;
 
-    protected override void OnInitialized() => transfer ??= new();
+    protected override void OnInitialized() => Transfer ??= new();
 
     private void HandleSubmit() => submitted = true;
 

@@ -20,8 +20,8 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddValidation();
 
 // Services resolved from the ValidationContext inside the async validators.
-builder.Services.AddSingleton<ApiFeatures.IUserService, ApiFeatures.UserService>();
-builder.Services.AddSingleton<ApiFeatures.IRoomService, ApiFeatures.RoomService>();
+builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IRoomService, RoomService>();
 
 // Preview 2: Native OTEL tracing - ASP.NET Core now adds semantic convention tags to HTTP activity by default
 // No need for OpenTelemetry.Instrumentation.AspNetCore anymore!

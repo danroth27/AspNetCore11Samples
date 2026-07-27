@@ -17,7 +17,7 @@
     .AddInteractiveServerRenderMode()
     .WithBrowserOptions(options =&gt;
     {
-        options.LogLevel = LogLevel.Debug;
+        options.LogLevel = LogLevel.Information;
         options.Server.ReconnectionMaxRetries = 10;
         options.Server.ReconnectionRetryInterval = TimeSpan.FromSeconds(1.5);
         options.Ssr.PreserveDom = true;

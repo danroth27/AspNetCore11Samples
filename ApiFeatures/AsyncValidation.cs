@@ -49,10 +49,11 @@ public sealed class RoomService : IRoomService
 // A custom async validation attribute — the simplest way to add an async rule.
 public sealed class UniqueEmailAttribute : AsyncValidationAttribute
 {
-    // Synchronous IsValid is abstract too. This attribute validates asynchronously only,
-    // so throw here to make accidental synchronous validation obvious.
+    // Synchronous IsValid is abstract on ValidationAttribute. This attribute has no
+    // synchronous rule to apply, so it succeeds here and does its real work in
+    // IsValidAsync — keeping the model safe to use with synchronous validators too.
     protected override ValidationResult? IsValid(object? value, ValidationContext context) =>
-        throw new InvalidOperationException("Validate this attribute with IsValidAsync.");
+        ValidationResult.Success;
 
     protected override async Task<ValidationResult?> IsValidAsync(
         object? value, ValidationContext context, CancellationToken cancellationToken)
@@ -87,9 +88,10 @@ public sealed class ReservationRequest : IAsyncValidatableObject
 
     public DateOnly Date { get; set; }
 
-    // Synchronous IValidatableObject. This type validates asynchronously only.
-    public IEnumerable<ValidationResult> Validate(ValidationContext context) =>
-        throw new InvalidOperationException("Validate this type with ValidateAsync.");
+    // IAsyncValidatableObject extends IValidatableObject. There are no synchronous rules
+    // on this type, so the sync path simply reports no errors and ValidateAsync does the
+    // real work.
+    public IEnumerable<ValidationResult> Validate(ValidationContext context) => [];
 
     public async IAsyncEnumerable<ValidationResult> ValidateAsync(
         ValidationContext context,

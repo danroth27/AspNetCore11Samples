@@ -1,14 +1,16 @@
-using System.Text.Json;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.SignalR.Client;
 
 var serverUrl = GetOption(args, "--server") ?? "http://localhost:5110";
 var user = GetOption(args, "--user") ?? "alice";
+var refreshAs = GetOption(args, "--refresh-as");
 var runSeconds = int.TryParse(GetOption(args, "--duration-seconds"), out var parsedSeconds) ? parsedSeconds : 75;
 var noRefresh = args.Contains("--no-refresh", StringComparer.OrdinalIgnoreCase);
 
 using var http = new HttpClient { BaseAddress = new Uri(serverUrl) };
-var tokenCache = new TokenCache(http, user);
+var tokenCache = new TokenCache(http, user, refreshAs);
 var refreshes = 0;
+var refreshFailures = 0;
 var closed = false;
 var reconnects = 0;
 var shuttingDown = false;
@@ -17,6 +19,11 @@ Console.WriteLine($"SignalR auth-refresh client connecting to {serverUrl}/clock 
 Console.WriteLine(noRefresh
     ? "Authentication refresh is DISABLED; the server should close the connection at token expiry."
     : "Authentication refresh is ENABLED; the connection should survive token expiry.");
+if (refreshAs is not null)
+{
+    Console.WriteLine(
+        $"Refresh tokens will be issued for a DIFFERENT user ('{refreshAs}'); the server should reject the refresh with 403.");
+}
 
 var initialToken = await tokenCache.GetAccessTokenAsync(forceRefresh: true);
 Console.WriteLine($"Initial token expires at {tokenCache.ExpiresAt:HH:mm:ss} UTC.");
@@ -34,6 +41,7 @@ var connectionBuilder = new HubConnectionBuilder()
         };
         options.OnAuthenticationRefreshFailed = context =>
         {
+            refreshFailures++;
             Console.WriteLine($"*** AUTH REFRESH FAILED at {DateTimeOffset.Now:HH:mm:ss}: {context.Exception?.Message ?? "unknown error"} ***");
             return Task.CompletedTask;
         };
@@ -102,6 +110,19 @@ if (noRefresh)
     return;
 }
 
+if (refreshAs is not null)
+{
+    // The server rejects a refresh that changes identity, so we expect a failed refresh
+    // and no successful one.
+    var rejected = refreshFailures > 0 && refreshes == 0;
+    Console.WriteLine(rejected
+        ? $"SUCCESS: the server rejected {refreshFailures} identity-changing refresh(es); the connection was never re-bound to '{refreshAs}'."
+        : $"FAILURE: expected the refresh to be rejected, but refreshes={refreshes}, refreshFailures={refreshFailures}.");
+    shuttingDown = true;
+    await connection.DisposeAsync();
+    return;
+}
+
 var success = ticks > 0 && refreshes > 0 && !closed && reconnects == 0;
 Console.WriteLine(success
     ? $"SUCCESS: received {ticks} ticks, observed {refreshes} auth refresh(es), and the connection never closed or reconnected."
@@ -116,7 +137,7 @@ static string? GetOption(string[] args, string name)
     return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
 }
 
-sealed class TokenCache(HttpClient http, string user)
+sealed class TokenCache(HttpClient http, string user, string? refreshAs = null)
 {
     private TokenResponse? _current;
     private int _issued;
@@ -125,31 +146,25 @@ sealed class TokenCache(HttpClient http, string user)
 
     public async Task<string> GetAccessTokenAsync(bool forceRefresh = false)
     {
-        // The auth-refresh HTTP request re-invokes AccessTokenProvider. Return a
-        // newly issued token when the current one is close to expiry so /refresh
-        // re-authenticates with a longer-lived principal.
+        // The auth-refresh request re-invokes AccessTokenProvider. Return a newly issued
+        // token when the current one is close to expiry so the refresh carries a
+        // longer-lived principal.
         if (!forceRefresh && _current is not null && _current.ExpiresAt > DateTimeOffset.UtcNow.AddSeconds(15))
         {
             return _current.AccessToken;
         }
 
-        _current = await http.PostAsync($"/token?user={Uri.EscapeDataString(user)}", null)
-            .ResultFromJsonAsync<TokenResponse>();
-        _issued++;
-        Console.WriteLine($"[token] issued #{_issued}; expires {_current.ExpiresAt:HH:mm:ss} UTC");
-        return _current.AccessToken;
-    }
-}
+        // --refresh-as requests later tokens for a different user so the server's
+        // OnAuthenticationRefresh identity check can be demonstrated rejecting them.
+        var tokenUser = _issued == 0 ? user : refreshAs ?? user;
 
-static class HttpResponseMessageExtensions
-{
-    public static async Task<T> ResultFromJsonAsync<T>(this Task<HttpResponseMessage> responseTask)
-    {
-        using var response = await responseTask;
+        var response = await http.PostAsync($"/token?user={Uri.EscapeDataString(tokenUser)}", content: null);
         response.EnsureSuccessStatusCode();
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web))
+        _current = await response.Content.ReadFromJsonAsync<TokenResponse>()
             ?? throw new InvalidOperationException("Token endpoint returned an empty response.");
+        _issued++;
+        Console.WriteLine($"[token] issued #{_issued} for '{tokenUser}'; expires {_current.ExpiresAt:HH:mm:ss} UTC");
+        return _current.AccessToken;
     }
 }
 

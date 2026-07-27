@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Runtime.CompilerServices;
 using System.Security.Claims;
-using System.Text;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -15,9 +15,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.SaveToken = true;
+        // Keep the JWT's original claim names ("sub", "name") instead of mapping them to
+        // the legacy WS-Security URIs, so the refresh check below can read "sub" directly.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = DemoTokenService.CreateValidationParameters();
-        // WebSockets and Server-Sent Events can't send an Authorization header, so the
-        // SignalR client sends the access token as a query string parameter. Read it
+        // Browser clients using WebSockets or Server-Sent Events can't set an Authorization
+        // header, so the JavaScript SignalR client sends the access token as a query string
+        // parameter instead. (The .NET client used by SignalRClient in this repo *does* send
+        // an Authorization header, so it never takes this path.) Read the query string token
         // only for the hub path. IMPORTANT: use HTTPS in production — query strings are
         // frequently written to server/proxy logs. This sample uses plain HTTP for
         // localhost convenience only. See
@@ -53,11 +58,11 @@ app.MapGet("/", () => "SignalR authentication refresh demo. POST /token?user=ali
 // signed in." A real app must authenticate the user (ASP.NET Core Identity, Microsoft
 // Entra ID, or another IdP), issue tokens from that trusted source, and validate them
 // against the provider's Authority — never mint tokens from an unauthenticated endpoint.
-app.MapPost("/token", (string user, DemoTokenService tokens) =>
+// It is registered only in Development so a copy of this code can't expose it when deployed.
+if (app.Environment.IsDevelopment())
 {
-    var token = tokens.CreateToken(user);
-    return Results.Ok(token);
-});
+    app.MapPost("/token", (string user, DemoTokenService tokens) => Results.Ok(tokens.CreateToken(user)));
+}
 
 app.MapHub<ClockHub>("/clock", options =>
 {
@@ -68,16 +73,36 @@ app.MapHub<ClockHub>("/clock", options =>
     {
         var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
             .CreateLogger("SignalRAuthRefresh");
+
+        // IMPORTANT: enabling EnableAuthenticationRefresh opts this connection OUT of
+        // SignalR's built-in "reject if the user changed" hardening — the app owns that
+        // policy now. A refresh must only ever extend the SAME user's session; it must
+        // never swap a live connection to a different identity, because per-connection
+        // state (group memberships, Context.Items, in-flight streams) stays attached.
+        var previousSub = context.PreviousUser.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var newSub = context.NewUser.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        if (previousSub is null || !string.Equals(previousSub, newSub, StringComparison.Ordinal))
+        {
+            // Returning false rejects the refresh: the endpoint responds with HTTP 403 and
+            // the connection keeps its existing principal.
+            logger.LogWarning(
+                "Rejected authentication refresh for {ConnectionId}: subject changed {PreviousUser} -> {NewUser}",
+                context.ConnectionId,
+                previousSub ?? "<none>",
+                newSub ?? "<none>");
+            return ValueTask.FromResult(false);
+        }
+
         logger.LogInformation(
-            "Accepted authentication refresh for {ConnectionId}: {PreviousUser} -> {NewUser}; new expiration {NewExpiration:O}",
+            "Accepted authentication refresh for {ConnectionId} as {User}; new expiration {NewExpiration:O}",
             context.ConnectionId,
-            context.PreviousUser.Identity?.Name ?? "<anonymous>",
-            context.NewUser.Identity?.Name ?? "<anonymous>",
+            newSub,
             context.NewExpiration);
 
-        // Returning true allows this connection to refresh its authentication. This is
-        // where a real app would enforce per-connection policy (for example, re-check
-        // that the user is still permitted, or deny refresh after some absolute limit).
+        // This is also where a real app would enforce any additional per-connection policy
+        // (for example, re-check that the user is still permitted, or deny refresh after
+        // some absolute session limit).
         return ValueTask.FromResult(true);
     };
 });
@@ -172,18 +197,20 @@ public sealed record TokenResponse(
     DateTimeOffset ExpiresAt,
     int ExpiresInSeconds);
 
-// DEMO ONLY token issuer/validator. It self-issues JWTs signed with a hardcoded
-// symmetric key so the sample is self-contained and needs no external identity
-// provider. A real app must NOT hardcode signing keys or self-issue tokens like this:
-// authenticate against an IdP and set JwtBearerOptions.Authority to validate tokens
-// from that trusted source. Secrets belong in configuration/secret management, not source.
+// DEMO ONLY token issuer/validator. It self-issues JWTs so the sample is self-contained
+// and needs no external identity provider. The signing key is generated per process with
+// RandomNumberGenerator, so there is NO key material checked into this repo — the same
+// approach the SignalR JwtSample in dotnet/aspnetcore uses
+// (src/SignalR/samples/JwtSample/Startup.cs). Because the key is new on every run,
+// tokens from a previous run stop validating when the server restarts.
+// A real app must NOT self-issue tokens like this: authenticate against an IdP and set
+// JwtBearerOptions.Authority to validate tokens from that trusted source.
 public sealed class DemoTokenService
 {
     private const string Issuer = "SignalRAuthRefreshDemo";
     private const string Audience = "SignalRAuthRefreshDemoClient";
     private static readonly TimeSpan Lifetime = TimeSpan.FromSeconds(45);
-    private static readonly SymmetricSecurityKey SigningKey = new(
-        Encoding.UTF8.GetBytes("SignalR authentication refresh demo signing key (.NET 11)."));
+    private static readonly SymmetricSecurityKey SigningKey = new(RandomNumberGenerator.GetBytes(32));
 
     public TokenResponse CreateToken(string user)
     {
@@ -192,7 +219,7 @@ public sealed class DemoTokenService
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, user),
-            new Claim(ClaimTypes.Name, user),
+            new Claim(JwtRegisteredClaimNames.Name, user),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
         };
 
@@ -220,6 +247,6 @@ public sealed class DemoTokenService
         IssuerSigningKey = SigningKey,
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
-        NameClaimType = ClaimTypes.Name
+        NameClaimType = JwtRegisteredClaimNames.Name
     };
 }
