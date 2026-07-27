@@ -1,26 +1,24 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Runtime.CompilerServices;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton<DemoTokenService>();
 builder.Services.AddSingleton<ConnectionAuthState>();
-
-// This sample doesn't issue tokens. Clients get them from `dotnet user-jwts`, the
-// standard development-time JWT tool, so there is no token-issuing endpoint and no
-// signing key anywhere in this repo. AddJwtBearer() reads the signing key, issuer and
-// audience from configuration: `dotnet user-jwts create` writes the key into user
-// secrets (outside the repo) and the issuer/audience into appsettings.Development.json.
-// See the README for the one-time setup command.
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // Keep the JWT's original claim names ("sub", "exp") instead of mapping them to
+        options.SaveToken = true;
+        // Keep the JWT's original claim names ("sub", "name") instead of mapping them to
         // the legacy WS-Security URIs, so the refresh check below can read "sub" directly.
         options.MapInboundClaims = false;
+        options.TokenValidationParameters = DemoTokenService.CreateValidationParameters();
         // Browser clients using WebSockets or Server-Sent Events can't set an Authorization
         // header, so the JavaScript SignalR client sends the access token as a query string
         // parameter instead. (The .NET client used by SignalRClient in this repo *does* send
@@ -44,15 +42,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Applied after the configuration binding above, which replaces TokenValidationParameters.
-// The demo uses very short-lived tokens, so the default five-minute clock skew would keep
-// an expired token valid far longer than the demo runs.
-builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
-{
-    options.TokenValidationParameters.ClockSkew = TimeSpan.Zero;
-    options.TokenValidationParameters.NameClaimType = JwtRegisteredClaimNames.Sub;
-});
-
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 
@@ -61,7 +50,19 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/", () => "SignalR authentication refresh demo. Create a token with `dotnet user-jwts create`, then connect to /clock.");
+app.MapGet("/", () => "SignalR authentication refresh demo. POST /token?user=alice, then connect to /clock.");
+
+// DEMO ONLY — this is NOT how to authenticate users. It issues a signed JWT for
+// whatever username is requested, with no credential check, so the sample can run
+// without a real identity provider. Treat it as a stand-in for "the user has already
+// signed in." A real app must authenticate the user (ASP.NET Core Identity, Microsoft
+// Entra ID, or another IdP), issue tokens from that trusted source, and validate them
+// against the provider's Authority — never mint tokens from an unauthenticated endpoint.
+// It is registered only in Development so a copy of this code can't expose it when deployed.
+if (app.Environment.IsDevelopment())
+{
+    app.MapPost("/token", (string user, DemoTokenService tokens) => Results.Ok(tokens.CreateToken(user)));
+}
 
 app.MapHub<ClockHub>("/clock", options =>
 {
@@ -190,3 +191,62 @@ public sealed class ConnectionAuthState
 }
 
 public sealed record AuthSnapshot(string UserName, DateTimeOffset? TokenExpiresAt);
+
+public sealed record TokenResponse(
+    string AccessToken,
+    DateTimeOffset ExpiresAt,
+    int ExpiresInSeconds);
+
+// DEMO ONLY token issuer/validator. It self-issues JWTs so the sample is self-contained
+// and needs no external identity provider. The signing key is generated per process with
+// RandomNumberGenerator, so there is NO key material checked into this repo — the same
+// approach the SignalR JwtSample in dotnet/aspnetcore uses
+// (src/SignalR/samples/JwtSample/Startup.cs). Because the key is new on every run,
+// tokens from a previous run stop validating when the server restarts.
+// A real app must NOT self-issue tokens like this: authenticate against an IdP and set
+// JwtBearerOptions.Authority to validate tokens from that trusted source.
+public sealed class DemoTokenService
+{
+    private const string Issuer = "SignalRAuthRefreshDemo";
+    private const string Audience = "SignalRAuthRefreshDemoClient";
+    private static readonly TimeSpan Lifetime = TimeSpan.FromSeconds(45);
+    private static readonly SymmetricSecurityKey SigningKey = new(RandomNumberGenerator.GetBytes(32));
+
+    public TokenResponse CreateToken(string user)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var expires = now.Add(Lifetime);
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user),
+            new Claim(JwtRegisteredClaimNames.Name, user),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
+        };
+
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Issuer = Issuer,
+            Audience = Audience,
+            Subject = new ClaimsIdentity(claims),
+            NotBefore = now.UtcDateTime,
+            Expires = expires.UtcDateTime,
+            SigningCredentials = new SigningCredentials(SigningKey, SecurityAlgorithms.HmacSha256)
+        };
+
+        var handler = new JwtSecurityTokenHandler();
+        return new TokenResponse(handler.CreateEncodedJwt(descriptor), expires, (int)Lifetime.TotalSeconds);
+    }
+
+    public static TokenValidationParameters CreateValidationParameters() => new()
+    {
+        ValidateIssuer = true,
+        ValidIssuer = Issuer,
+        ValidateAudience = true,
+        ValidAudience = Audience,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = SigningKey,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = JwtRegisteredClaimNames.Name
+    };
+}
