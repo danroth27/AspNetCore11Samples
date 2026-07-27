@@ -1,14 +1,13 @@
-using System.Net.Http.Json;
 using Microsoft.AspNetCore.SignalR.Client;
 
 var serverUrl = GetOption(args, "--server") ?? "http://localhost:5110";
 var user = GetOption(args, "--user") ?? "alice";
 var refreshAs = GetOption(args, "--refresh-as");
+var serverProject = GetOption(args, "--server-project") ?? UserJwts.FindServerProject();
 var runSeconds = int.TryParse(GetOption(args, "--duration-seconds"), out var parsedSeconds) ? parsedSeconds : 75;
 var noRefresh = args.Contains("--no-refresh", StringComparer.OrdinalIgnoreCase);
 
-using var http = new HttpClient { BaseAddress = new Uri(serverUrl) };
-var tokenCache = new TokenCache(http, user, refreshAs);
+var tokenSource = new UserJwts(serverProject, user, refreshAs);
 var refreshes = 0;
 var refreshFailures = 0;
 var closed = false;
@@ -16,6 +15,7 @@ var reconnects = 0;
 var shuttingDown = false;
 
 Console.WriteLine($"SignalR auth-refresh client connecting to {serverUrl}/clock as '{user}'.");
+Console.WriteLine($"Tokens come from `dotnet user-jwts` against {serverProject}.");
 Console.WriteLine(noRefresh
     ? "Authentication refresh is DISABLED; the server should close the connection at token expiry."
     : "Authentication refresh is ENABLED; the connection should survive token expiry.");
@@ -25,9 +25,6 @@ if (refreshAs is not null)
         $"Refresh tokens will be issued for a DIFFERENT user ('{refreshAs}'); the server should reject the refresh with 403.");
 }
 
-var initialToken = await tokenCache.GetAccessTokenAsync(forceRefresh: true);
-Console.WriteLine($"Initial token expires at {tokenCache.ExpiresAt:HH:mm:ss} UTC.");
-
 var connectionBuilder = new HubConnectionBuilder()
     .WithAuthenticationRefresh(options =>
     {
@@ -36,7 +33,7 @@ var connectionBuilder = new HubConnectionBuilder()
         options.OnAuthenticationRefreshed = context =>
         {
             refreshes++;
-            Console.WriteLine($"*** AUTH REFRESHED #{refreshes} at {DateTimeOffset.Now:HH:mm:ss}; reported lifetime {context.NewTokenLifetime}; next token expires {tokenCache.ExpiresAt:HH:mm:ss} UTC ***");
+            Console.WriteLine($"*** AUTH REFRESHED #{refreshes} at {DateTimeOffset.Now:HH:mm:ss}; reported lifetime {context.NewTokenLifetime} ***");
             return Task.CompletedTask;
         };
         options.OnAuthenticationRefreshFailed = context =>
@@ -48,7 +45,7 @@ var connectionBuilder = new HubConnectionBuilder()
     })
     .WithUrl($"{serverUrl}/clock", options =>
     {
-        options.AccessTokenProvider = async () => await tokenCache.GetAccessTokenAsync();
+        options.AccessTokenProvider = async () => await tokenSource.GetAccessTokenAsync();
     });
 var connection = connectionBuilder.Build();
 connection.Closed += error =>
@@ -137,36 +134,80 @@ static string? GetOption(string[] args, string name)
     return index >= 0 && index + 1 < args.Length ? args[index + 1] : null;
 }
 
-sealed class TokenCache(HttpClient http, string user, string? refreshAs = null)
+// Tokens come from `dotnet user-jwts`, the development-time JWT tool, instead of a
+// token-issuing endpoint in the sample. The signing key lives in the server project's
+// user secrets, so no key material is checked into this repo. In a real app this is
+// where you'd acquire a token from your identity provider (MSAL, an OIDC client, ...).
+sealed class UserJwts(string serverProject, string user, string? refreshAs = null)
 {
-    private TokenResponse? _current;
+    private static readonly TimeSpan TokenLifetime = TimeSpan.FromSeconds(45);
+    private string? _current;
+    private DateTimeOffset _currentExpiresAt;
     private int _issued;
 
-    public DateTimeOffset ExpiresAt => _current?.ExpiresAt ?? DateTimeOffset.MinValue;
-
-    public async Task<string> GetAccessTokenAsync(bool forceRefresh = false)
+    public async Task<string> GetAccessTokenAsync()
     {
-        // The auth-refresh request re-invokes AccessTokenProvider. Return a newly issued
-        // token when the current one is close to expiry so the refresh carries a
-        // longer-lived principal.
-        if (!forceRefresh && _current is not null && _current.ExpiresAt > DateTimeOffset.UtcNow.AddSeconds(15))
+        // SignalR asks for a token on every HTTP request it makes (negotiate, then the
+        // transport connect), and again when refreshing. Reuse the current token until it
+        // is close to expiry so a refresh gets a genuinely longer-lived one.
+        if (_current is not null && _currentExpiresAt > DateTimeOffset.UtcNow.AddSeconds(15))
         {
-            return _current.AccessToken;
+            return _current;
         }
 
         // --refresh-as requests later tokens for a different user so the server's
         // OnAuthenticationRefresh identity check can be demonstrated rejecting them.
         var tokenUser = _issued == 0 ? user : refreshAs ?? user;
 
-        var response = await http.PostAsync($"/token?user={Uri.EscapeDataString(tokenUser)}", content: null);
-        response.EnsureSuccessStatusCode();
-        _current = await response.Content.ReadFromJsonAsync<TokenResponse>()
-            ?? throw new InvalidOperationException("Token endpoint returned an empty response.");
+        var psi = new System.Diagnostics.ProcessStartInfo("dotnet")
+        {
+            ArgumentList =
+            {
+                "user-jwts", "create",
+                "--project", serverProject,
+                "--name", tokenUser,
+                "--valid-for", $"{(int)TokenLifetime.TotalSeconds}s",
+                "--output", "token",
+            },
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+
+        using var process = System.Diagnostics.Process.Start(psi)
+            ?? throw new InvalidOperationException("Could not start the dotnet CLI.");
+        var stdout = await process.StandardOutput.ReadToEndAsync();
+        var stderr = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"`dotnet user-jwts create` failed ({process.ExitCode}). Run the one-time setup in the README. {stderr.Trim()}");
+        }
+
+        _current = stdout.Trim();
+        _currentExpiresAt = DateTimeOffset.UtcNow.Add(TokenLifetime);
         _issued++;
-        Console.WriteLine($"[token] issued #{_issued} for '{tokenUser}'; expires {_current.ExpiresAt:HH:mm:ss} UTC");
-        return _current.AccessToken;
+        Console.WriteLine($"[token] user-jwts issued #{_issued} for '{tokenUser}', valid for {TokenLifetime.TotalSeconds:F0}s");
+        return _current;
+    }
+
+    // The client runs `dotnet user-jwts` against the server project, so locate it whether
+    // the client was launched from the repo root or from its own directory.
+    public static string FindServerProject()
+    {
+        for (var dir = new DirectoryInfo(Directory.GetCurrentDirectory()); dir is not null; dir = dir.Parent)
+        {
+            var candidate = Path.Combine(dir.FullName, "SignalRFeatures");
+            if (File.Exists(Path.Combine(candidate, "SignalRFeatures.csproj")))
+            {
+                return candidate;
+            }
+        }
+
+        throw new InvalidOperationException(
+            "Could not find the SignalRFeatures project. Pass --server-project <path>.");
     }
 }
 
-sealed record TokenResponse(string AccessToken, DateTimeOffset ExpiresAt, int ExpiresInSeconds);
 sealed record ClockTick(DateTimeOffset ServerTime, string ConnectionId, string UserName, DateTimeOffset? TokenExpiresAt);
