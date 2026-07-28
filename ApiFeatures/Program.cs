@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ApiFeatures;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using OpenTelemetry.Trace;
@@ -17,6 +18,10 @@ builder.Services.AddOpenApi(options =>
     options.OpenApiVersion = Microsoft.OpenApi.OpenApiSpecVersion.OpenApi3_2;
 });
 builder.Services.AddValidation();
+
+// Services resolved from the ValidationContext inside the async validators.
+builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IRoomService, RoomService>();
 
 // Preview 2: Native OTEL tracing - ASP.NET Core now adds semantic convention tags to HTTP activity by default
 // No need for OpenTelemetry.Instrumentation.AspNetCore anymore!
@@ -264,6 +269,10 @@ app.MapGet("/todos", () => TypedResults.Ok<Todo[]>(new[]
     }))
     .WithName("GetTodos")
     .WithDescription("Returns Todo[] — array schema reference uses TodoArray");
+
+// Endpoints demonstrating C# unions and async validation in minimal APIs.
+app.MapUnions();          // C# unions in minimal APIs (anyOf in OpenAPI)
+app.MapAsyncValidation(); // Async validation for minimal APIs
 
 app.Run();
 

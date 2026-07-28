@@ -49,3 +49,77 @@ Accept: application/json
 Accept-Encoding: gzip
 
 ###
+
+# =====================================================================
+# C# unions and async validation in minimal APIs (.NET 11)
+# =====================================================================
+
+### Unions: return type — Dog case (STJ serializes the active case)
+GET {{ApiFeatures_HostAddress}}/pets/0
+Accept: application/json
+
+###
+
+### Unions: return type — Cat case
+GET {{ApiFeatures_HostAddress}}/pets/1
+Accept: application/json
+
+###
+
+### Unions: OpenAPI describes the union return with anyOf: [Dog, Cat]
+# Look at components.schemas.Pet in the response.
+GET {{ApiFeatures_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
+### Unions: body param — reference an existing pet (string case)
+POST {{ApiFeatures_HostAddress}}/pets/adopt
+Content-Type: application/json
+
+"Rex"
+
+###
+
+### Unions: body param — register a new pet (Dog object case)
+POST {{ApiFeatures_HostAddress}}/pets/adopt
+Content-Type: application/json
+
+{ "name": "Fido" }
+
+###
+
+### Async validation: a registered email is rejected by the async [UniqueEmail] rule
+POST {{ApiFeatures_HostAddress}}/register
+Content-Type: application/json
+
+{ "email": "admin@example.com", "displayName": "Admin" }
+
+###
+
+### Async validation: a new email is accepted
+POST {{ApiFeatures_HostAddress}}/register
+Content-Type: application/json
+
+{ "email": "brand-new@example.com", "displayName": "Newbie" }
+
+###
+
+### Async validation: a weekend date is rejected by async IAsyncValidatableObject
+POST {{ApiFeatures_HostAddress}}/reservations
+Content-Type: application/json
+
+{ "email": "guest@example.com", "date": "2026-07-25" }
+
+###
+
+### Async validation: a weekday is accepted
+POST {{ApiFeatures_HostAddress}}/reservations
+Content-Type: application/json
+
+{ "email": "guest@example.com", "date": "2026-07-22" }
+
+###
+
+###
+

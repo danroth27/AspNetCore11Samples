@@ -67,7 +67,10 @@ app.UseHttpsRedirection();
 
 app.UseRequestLocalization();
 app.UseSession();
-app.UseAntiforgery();
+// No app.UseAntiforgery() call is needed. .NET 11 automatically rejects unsafe
+// cross-origin requests based on the browser's Sec-Fetch-Site/Origin headers
+// (dotnet/aspnetcore #66585), which protects the SSR forms in this app even
+// without the token-based antiforgery middleware.
 
 // Culture switcher target for the validation demos. Writes the cookie that the
 // CookieRequestCultureProvider above reads on subsequent requests.
@@ -84,6 +87,23 @@ app.MapGet("/Culture/Set", (HttpContext context, string culture, string redirect
 app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+    .AddInteractiveServerRenderMode()
+    // Configure client-side startup behavior from the server in C# instead of
+    // hand-writing Blazor.start JavaScript (dotnet/aspnetcore #67337). The server
+    // serializes these into the page and the Blazor script applies them in the browser.
+    .WithBrowserOptions(options =>
+    {
+        // Client-side log level — visible in the browser dev console.
+        options.LogLevel = LogLevel.Information;
+
+        // Interactive Server reconnection behavior (observe by stopping/restarting
+        // the server and watching the reconnection UI).
+        options.Server.ReconnectionMaxRetries = 10;
+        options.Server.ReconnectionRetryInterval = TimeSpan.FromSeconds(1.5);
+
+        // Preserve the DOM across enhanced navigations.
+        options.Ssr.PreserveDom = true;
+    });
 
 app.Run();
+

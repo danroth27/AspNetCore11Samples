@@ -1,9 +1,12 @@
 <Solution>
   <Project Path="ApiFeatures/ApiFeatures.csproj" />
+  <Project Path="CsrfAttackerSite/CsrfAttackerSite.csproj" />
   <Project Path="BackendApi/BackendApi.csproj" />
   <Project Path="BlazorFeatures/BlazorFeatures.csproj" />
   <Project Path="BlazorFeatures.E2E.Tests/BlazorFeatures.E2E.Tests.csproj" />
   <Project Path="BlazorWasmFeatures/BlazorWasmFeatures.csproj" />
   <Project Path="SharedComponents/SharedComponents.csproj" />
+  <Project Path="SignalRClient/SignalRClient.csproj" />
+  <Project Path="SignalRFeatures/SignalRFeatures.csproj" />
   <Project Path="WebWorkerDemo/WebWorkerDemo.csproj" />
 </Solution>

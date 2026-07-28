@@ -1,0 +1,53 @@
+@page "/browser-options"
+@using Microsoft.AspNetCore.Http
+
+<PageTitle>Configure client from server</PageTitle>
+
+<h1>Configure Blazor client behavior from the server (.NET 11)</h1>
+
+<p class="lead">
+    Blazor apps can configure client-side startup behavior from the server in C# when
+    mapping Razor components, instead of hand-writing <code>Blazor.start</code> JavaScript
+    (<a href="https://github.com/dotnet/aspnetcore/pull/67337" target="_blank">#67337</a>).
+</p>
+
+<p>This app configures the following in <code>Program.cs</code> with <code>WithBrowserOptions</code>:</p>
+
+<pre><code class="language-csharp">app.MapRazorComponents&lt;App&gt;()
+    .AddInteractiveServerRenderMode()
+    .WithBrowserOptions(options =&gt;
+    {
+        options.LogLevel = LogLevel.Information;
+        options.Server.ReconnectionMaxRetries = 10;
+        options.Server.ReconnectionRetryInterval = TimeSpan.FromSeconds(1.5);
+        options.Ssr.PreserveDom = true;
+    });</code></pre>
+
+@if (resolved is not null)
+{
+    <h2>Resolved options for this request</h2>
+    <p class="text-muted">Read on the server with <code>HttpContext.GetBrowserOptions()</code>.</p>
+    <ul>
+        <li><strong>LogLevel:</strong> @resolved.LogLevel</li>
+        <li><strong>Server.ReconnectionMaxRetries:</strong> @resolved.Server.ReconnectionMaxRetries</li>
+        <li><strong>Server.ReconnectionRetryInterval:</strong> @resolved.Server.ReconnectionRetryInterval</li>
+        <li><strong>Ssr.PreserveDom:</strong> @resolved.Ssr.PreserveDom</li>
+    </ul>
+}
+
+<div class="alert alert-info">
+    <strong>What this shows:</strong> the options above are the client startup settings this app
+    configured in C# with <code>WithBrowserOptions</code> — no <code>Blazor.start</code>
+    JavaScript. To watch one take effect at runtime, stop and restart the server: the
+    reconnection UI retries using the configured interval and retry count.
+</div>
+
+@code {
+    // Static SSR page (no @rendermode) so HttpContext is available to read the
+    // resolved options the server serialized into the page.
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    BrowserOptions? resolved;
+
+    protected override void OnInitialized() => resolved = HttpContext?.GetBrowserOptions();
+}
