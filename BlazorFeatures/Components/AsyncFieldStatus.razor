@@ -48,7 +48,7 @@ else
                 $"{nameof(AsyncFieldStatus<T>)} requires a cascading EditContext, " +
                 "typically supplied by an <EditForm>.");
         }
-        CurrentEditContext.OnValidationStateChanged += OnValidationStateChanged;
+        CurrentEditContext.OnValidationStateChanged += HandleValidationStateChanged;
     }
 
     protected override void OnParametersSet()
@@ -64,11 +64,11 @@ else
     {
         if (CurrentEditContext is not null)
         {
-            CurrentEditContext.OnValidationStateChanged -= OnValidationStateChanged;
+            CurrentEditContext.OnValidationStateChanged -= HandleValidationStateChanged;
         }
     }
 
-    private void OnValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
+    private void HandleValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
         => InvokeAsync(StateHasChanged);
 
     private bool IsValidatedAvailable()

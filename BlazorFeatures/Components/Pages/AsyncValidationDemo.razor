@@ -1,7 +1,6 @@
 @page "/async-validation"
 @rendermode InteractiveServer
 @using BlazorFeatures.Data
-@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<BlazorFeatures.Resources.ValidationMessages> L
 @implements IDisposable
@@ -25,8 +24,10 @@
     The only thing this component does with the EditContext is *observe* it:
       - editContext.IsValidationPending(() => field) drives the per-field spinner
       - editContext.IsValidationFaulted(() => field) surfaces handler exceptions
-      - editContext.IsValidationPending() (no field) is true while any check is in
-        flight, which is what disables the submit button.
+      - editContext.IsValidationPending() (no field) reports only whether a
+        *form-level* pass is in flight - it deliberately ignores per-field tasks.
+        That is what drives the submit button's "Validating..." state, so tabbing
+        between fields does not disable submit; submitting does.
 
     Username/Email use the standard InputText binding, so each async check runs when
     the field changes (tab or click away) rather than on every keystroke. If a field
@@ -34,12 +35,9 @@
     in-flight task and only the latest result is applied.
 *@
 <div class="form-card">
-<EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
+    <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
 
-    @* Not disabled after success: editing any field clears the success state, so the
-       same form can be re-submitted without a page reload. *@
-    <fieldset>
         <div class="form-group">
             <label for="username">@L["Username"]</label>
             <InputText id="username" class="form-control" @bind-Value="model.Username" placeholder="@L["UsernamePlaceholder"]" />
@@ -93,8 +91,7 @@
         }
 
         <ValidationSummary />
-    </fieldset>
-</EditForm>
+    </EditForm>
 </div>
 
 @code {
@@ -105,24 +102,25 @@
     protected override void OnInitialized()
     {
         editContext = new EditContext(model);
-        editContext.OnValidationStateChanged += OnValidationStateChanged;
-        editContext.OnFieldChanged += OnFieldChanged;
+        editContext.OnValidationStateChanged += HandleValidationStateChanged;
+        editContext.OnFieldChanged += HandleFieldChanged;
     }
 
     public void Dispose()
     {
-        editContext.OnValidationStateChanged -= OnValidationStateChanged;
-        editContext.OnFieldChanged -= OnFieldChanged;
+        editContext.OnValidationStateChanged -= HandleValidationStateChanged;
+        editContext.OnFieldChanged -= HandleFieldChanged;
     }
 
-    // Re-render when validation state changes so the pending/faulted UI keeps up
-    // with async checks completing on a background continuation.
-    private void OnValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
+    // EditContext exposes plain .NET events, so re-rendering is up to us. Async checks
+    // complete on a continuation, well after the event that started them returned.
+    private void HandleValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
         => InvokeAsync(StateHasChanged);
 
-    private void OnFieldChanged(object? sender, FieldChangedEventArgs e)
+    // Editing anything clears the success banner, so the form can be submitted again
+    // without reloading the page.
+    private void HandleFieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        // EditContext events are plain .NET events, so ask for a re-render explicitly.
         submittedSuccessfully = false;
         InvokeAsync(StateHasChanged);
     }
