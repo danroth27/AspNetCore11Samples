@@ -1,12 +1,17 @@
 namespace BlazorFeatures.Data;
 
 // Interactive Blazor form model used by /async-validation.
-// Uniqueness checks (username/email) are not modeled as ValidationAttributes -
-// they run via the new EditContext.OnValidationRequestedAsync event and the
-// per-field EditContext.AddValidationTask API (PR #66526), wired up inline in
-// AsyncValidationDemo.razor against a UserService. This keeps the model
-// declarative and lets the async work participate in the framework's
-// pending/faulted state tracking.
+//
+// Every rule here is a DataAnnotations attribute - including the *asynchronous*
+// uniqueness checks, which are [UniqueUsername] / [UniqueEmail] (see
+// AsyncValidationAttributes.cs). In .NET 11 DataAnnotations validation is async
+// end to end, so the model stays fully declarative and the form needs no
+// hand-written validation plumbing.
+//
+// [ValidatableType] + AddValidation() (Program.cs) opt this type into
+// Microsoft.Extensions.Validation, which is what gives DataAnnotationsValidator
+// its async path. Without them, Blazor falls back to synchronous validation and
+// the async attributes never run.
 using System.ComponentModel.DataAnnotations;
 
 [ValidatableType]
@@ -14,11 +19,13 @@ public class RegistrationModel
 {
     [Required(ErrorMessage = nameof(Resources.ValidationMessages.RequiredError))]
     [StringLength(20, MinimumLength = 4, ErrorMessage = nameof(Resources.ValidationMessages.StringLengthError))]
+    [UniqueUsername]
     [Display(Name = nameof(Resources.ValidationMessages.Username))]
     public string Username { get; set; } = "";
 
     [Required(ErrorMessage = nameof(Resources.ValidationMessages.RequiredError))]
     [EmailAddress(ErrorMessage = nameof(Resources.ValidationMessages.EmailError))]
+    [UniqueEmail]
     [Display(Name = nameof(Resources.ValidationMessages.Email))]
     public string Email { get; set; } = "";
 

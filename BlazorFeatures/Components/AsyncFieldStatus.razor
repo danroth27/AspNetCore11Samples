@@ -40,10 +40,6 @@ else
     [Parameter] public string? FaultedMessage { get; set; }
     [Parameter] public string? AvailableMessage { get; set; }
 
-    // Set to true while a submit is in flight so the "available" pill doesn't
-    // briefly appear between ValidateAsync awaits.
-    [Parameter] public bool Suppress { get; set; }
-
     protected override void OnInitialized()
     {
         if (CurrentEditContext is null)
@@ -76,8 +72,7 @@ else
         => InvokeAsync(StateHasChanged);
 
     private bool IsValidatedAvailable()
-        => !Suppress
-            && CurrentEditContext.IsModified(field)
+        => CurrentEditContext.IsModified(field)
             && !CurrentEditContext.IsValidationPending(field)
             && !CurrentEditContext.IsValidationFaulted(field)
             && !CurrentEditContext.GetValidationMessages(field).Any();

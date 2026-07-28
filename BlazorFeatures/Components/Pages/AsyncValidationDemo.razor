@@ -1,11 +1,9 @@
 @page "/async-validation"
 @rendermode InteractiveServer
-@using System.Linq.Expressions
 @using BlazorFeatures.Data
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<BlazorFeatures.Resources.ValidationMessages> L
-@inject UserService Users
 @implements IDisposable
 
 <PageTitle>@L["RegisterPageTitle"]</PageTitle>
@@ -15,28 +13,40 @@
 <CultureSwitcher />
 
 @*
-    Interactive Server form using the new async validation pipeline (PR #66526):
-      - OnFieldChanged triggers a per-field async check that registers via
-        EditContext.AddValidationTask(field, task, cts). The framework tracks
-        pending/faulted state and supersedes prior tasks for the same field.
-      - OnValidationRequestedAsync runs the same checks on submit so a user who
-        never blurred the field still gets validated.
-      - editContext.IsValidationPending(() => field) drives the spinner and
-        editContext.IsValidationFaulted(() => field) surfaces handler exceptions.
+    Async validation with plain DataAnnotations (.NET 11).
+
+    There is no validation code in this component. The async uniqueness rules are
+    [UniqueUsername] / [UniqueEmail] on RegistrationModel - AsyncValidationAttribute
+    subclasses that await a service lookup, exactly like the ones ApiFeatures uses
+    for minimal APIs. <DataAnnotationsValidator /> runs them per-field as the user
+    edits and again for the whole model on submit, and <EditForm /> awaits
+    EditContext.ValidateAsync() before invoking OnValidSubmit.
+
+    The only thing this component does with the EditContext is *observe* it:
+      - editContext.IsValidationPending(() => field) drives the per-field spinner
+      - editContext.IsValidationFaulted(() => field) surfaces handler exceptions
+      - editContext.IsValidationPending() (no field) is true while any check is in
+        flight, which is what disables the submit button.
+
+    Username/Email use the standard InputText binding, so each async check runs when
+    the field changes (tab or click away) rather than on every keystroke. If a field
+    is edited again while its check is still running, the framework cancels the
+    in-flight task and only the latest result is applied.
 *@
 <div class="form-card">
-<EditForm EditContext="editContext" OnSubmit="HandleSubmit">
+<EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
 
-    <fieldset disabled="@(submitting || submittedSuccessfully)">
+    @* Not disabled after success: editing any field clears the success state, so the
+       same form can be re-submitted without a page reload. *@
+    <fieldset>
         <div class="form-group">
             <label for="username">@L["Username"]</label>
             <InputText id="username" class="form-control" @bind-Value="model.Username" placeholder="@L["UsernamePlaceholder"]" />
             <AsyncFieldStatus For="() => model.Username"
                               PendingMessage="@L["CheckingMessage"]"
                               FaultedMessage="@L["FaultedMessage"]"
-                              AvailableMessage="@L["AvailableMessage"]"
-                              Suppress="submitting" />
+                              AvailableMessage="@L["AvailableMessage"]" />
         </div>
 
         <div class="form-group">
@@ -45,8 +55,7 @@
             <AsyncFieldStatus For="() => model.Email"
                               PendingMessage="@L["CheckingMessage"]"
                               FaultedMessage="@L["FaultedMessage"]"
-                              AvailableMessage="@L["AvailableMessage"]"
-                              Suppress="submitting" />
+                              AvailableMessage="@L["AvailableMessage"]" />
         </div>
 
         <div class="form-group">
@@ -63,8 +72,8 @@
             <ValidationMessage For="() => model.Website" />
         </div>
 
-        <button type="submit" class="btn btn-primary">
-            @if (submitting)
+        <button type="submit" class="btn btn-primary" disabled="@editContext.IsValidationPending()">
+            @if (editContext.IsValidationPending())
             {
                 <text>@L["SubmittingButton"]</text>
             }
@@ -91,127 +100,33 @@
 @code {
     private RegistrationModel model = new();
     private EditContext editContext = default!;
-    private ValidationMessageStore messages = default!;
-    private bool submitting;
     private bool submittedSuccessfully;
-    private bool fieldHandlerSubscribed;
 
     protected override void OnInitialized()
     {
         editContext = new EditContext(model);
-        messages = new ValidationMessageStore(editContext);
         editContext.OnValidationStateChanged += OnValidationStateChanged;
-        editContext.OnValidationRequestedAsync += OnValidationRequestedAsync;
-    }
-
-    // Subscribe to OnFieldChanged *after* the first render so that the
-    // <DataAnnotationsValidator /> child component has already subscribed its
-    // own handler. Event handlers fire in subscription order, and DataAnnotationsValidator
-    // calls EditContext.AddValidationTask on every field change (PR #66526). If our
-    // handler ran first, DataAnnotationsValidator's later AddValidationTask call would
-    // cancel our CTS. By subscribing last, our AddValidationTask supersedes its task
-    // (which silently returns on OperationCanceledException) and our async result wins.
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender && !fieldHandlerSubscribed)
-        {
-            editContext.OnFieldChanged += OnFieldChanged;
-            fieldHandlerSubscribed = true;
-        }
+        editContext.OnFieldChanged += OnFieldChanged;
     }
 
     public void Dispose()
     {
-        if (fieldHandlerSubscribed)
-        {
-            editContext.OnFieldChanged -= OnFieldChanged;
-        }
         editContext.OnValidationStateChanged -= OnValidationStateChanged;
-        editContext.OnValidationRequestedAsync -= OnValidationRequestedAsync;
+        editContext.OnFieldChanged -= OnFieldChanged;
     }
 
+    // Re-render when validation state changes so the pending/faulted UI keeps up
+    // with async checks completing on a background continuation.
     private void OnValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
         => InvokeAsync(StateHasChanged);
 
-    // Per-field async uniqueness check fired on edit. AddValidationTask makes the
-    // framework cancel any prior pending task for the same field and surface this
-    // task's pending/faulted state via EditContext.IsValidationPending/Faulted.
     private void OnFieldChanged(object? sender, FieldChangedEventArgs e)
     {
-        if (e.FieldIdentifier.FieldName == nameof(model.Username))
-        {
-            ScheduleUniquenessCheck(e.FieldIdentifier, model.Username, Users.IsUsernameTakenAsync, "UniqueUsernameError");
-        }
-        else if (e.FieldIdentifier.FieldName == nameof(model.Email))
-        {
-            ScheduleUniquenessCheck(e.FieldIdentifier, model.Email, Users.IsEmailTakenAsync, "UniqueEmailError");
-        }
-    }
-
-    private void ScheduleUniquenessCheck(
-        FieldIdentifier field,
-        string value,
-        Func<string, CancellationToken, Task<bool>> check,
-        string errorKey)
-    {
-        var cts = new CancellationTokenSource();
-        var task = RunCheckAsync(field, value, check, errorKey, cts.Token);
-        editContext.AddValidationTask(field, task, cts);
-    }
-
-    private async Task RunCheckAsync(
-        FieldIdentifier field,
-        string value,
-        Func<string, CancellationToken, Task<bool>> check,
-        string errorKey,
-        CancellationToken ct)
-    {
-        messages.Clear(field);
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return;
-        }
-
-        bool taken;
-        try
-        {
-            taken = await check(value, ct);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            // Superseded by a newer edit for this field; let the latest task win.
-            return;
-        }
-
-        if (taken)
-        {
-            messages.Add(field, L[errorKey]);
-        }
-        editContext.NotifyValidationStateChanged();
-    }
-
-    // Submit-time guard: re-check both fields and let ValidateAsync await everything.
-    private Task OnValidationRequestedAsync(object? sender, ValidationRequestedEventArgs e)
-    {
-        var userField = FieldIdentifier.Create(() => model.Username);
-        var emailField = FieldIdentifier.Create(() => model.Email);
-        ScheduleUniquenessCheck(userField, model.Username, Users.IsUsernameTakenAsync, "UniqueUsernameError");
-        ScheduleUniquenessCheck(emailField, model.Email, Users.IsEmailTakenAsync, "UniqueEmailError");
-        return Task.CompletedTask;
-    }
-
-    private async Task HandleSubmit()
-    {
-        submitting = true;
+        // EditContext events are plain .NET events, so ask for a re-render explicitly.
         submittedSuccessfully = false;
-        StateHasChanged();
-        try
-        {
-            submittedSuccessfully = await editContext.ValidateAsync();
-        }
-        finally
-        {
-            submitting = false;
-        }
+        InvokeAsync(StateHasChanged);
     }
+
+    // Only runs once every rule - including the awaited uniqueness checks - has passed.
+    private void HandleValidSubmit() => submittedSuccessfully = true;
 }

@@ -32,7 +32,7 @@ and features. Demos are grouped by the preview that introduced them.
 
 **Preview 5**
 - **Client-side Validation** (`/client-validation`) — Validation that runs on the client
-- **Async Validation** (`/async-validation`) — Async form validation with localized messages
+- **Async Validation** (`/async-validation`) — Async form validation with localized messages. Updated in Preview 6 to use async DataAnnotations (`AsyncValidationAttribute`), the same hooks `ApiFeatures` uses for minimal APIs
 - **QuickGrid SSR** (`/quickgrid-ssr`) — QuickGrid in statically rendered pages
 - **Session Parameter** (`/session-parameter`) — `[SupplyParameterFromSession]`
 
