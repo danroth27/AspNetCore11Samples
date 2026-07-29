@@ -48,7 +48,13 @@ builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(o =
 // Vary: Accept-Encoding when compression is enabled, even when the response
 // itself isn't compressed. This prevents shared caches/CDNs from serving
 // the wrong encoding to a client that didn't ask for it.
-builder.Services.AddResponseCompression();
+// EnableForHttps is off by default (compressing over TLS can expose responses to
+// BREACH/CRIME-style side-channel attacks). This sample has no secrets in its
+// payloads, so turn it on to demonstrate zstd.
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
 builder.Services.AddRequestDecompression();
 
 // Preview 5 (#66249): Kestrel applies RequestHeadersTimeout to fragmented HTTP/2 and
