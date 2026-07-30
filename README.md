@@ -114,17 +114,16 @@ Web API (minimal APIs) demonstrating framework features:
 ### SignalRFeatures and SignalRClient
 SignalR authentication-refresh demo for .NET 11 Preview 6:
 
-- **Authentication refresh** (Preview 6, [dotnet/aspnetcore#67400](https://github.com/dotnet/aspnetcore/pull/67400)) — the server enables `EnableAuthenticationRefresh` on `/clock`, and the .NET client refreshes its bearer token before expiry without dropping the hub connection. Tokens last 45 seconds so refresh is visible during a short run.
-- `SignalRFeatures` hosts the JWT bearer-secured `/clock` hub and `/token?user=alice` issuer on `http://localhost:5110`.
-- `SignalRClient` streams clock ticks for 75 seconds and prints auth-refresh callbacks plus a success summary.
+- **Authentication refresh** (Preview 6, [dotnet/aspnetcore#67400](https://github.com/dotnet/aspnetcore/pull/67400)) — the server enables `EnableAuthenticationRefresh` on `/clock`, and the .NET client refreshes its bearer token without dropping the hub connection. Tokens last 45 seconds so an automatic refresh is visible during a short run.
+- `SignalRFeatures` hosts the JWT bearer-secured `/clock` hub, the `/token?user=alice` issuer, and `/promote?user=alice` on `https://localhost:7110`. The client also calls `/reset?user=alice` at startup, so the demo can be re-run repeatedly against one server process.
+- `SignalRClient` streams clock ticks for 50 seconds and prints auth-refresh callbacks plus a success summary. Eight seconds in it promotes `alice` to `admin` and calls `RefreshAuthenticationAsync()`, so the new role shows up on the next tick over the same connection.
 
 **Security notes (this sample deliberately simplifies auth; don't copy these into production):**
 
-- The `/token` endpoint issues a signed JWT for any requested username **with no credential check** — it stands in for a real sign-in. It is registered **only in Development** so a copy of this code can't expose it when deployed. Real apps authenticate the user (ASP.NET Core Identity, Microsoft Entra ID, or another IdP) and issue tokens from that trusted source; validate them with `JwtBearerOptions.Authority` instead of a local key.
+- The `/token` endpoint issues a signed JWT for any requested username **with no credential check**, and `/promote` and `/reset` change the admin role for anyone who asks — all three stand in for real sign-in and real entitlement management. They are registered **only in Development** so a copy of this code can't expose them when deployed. Real apps authenticate the user (ASP.NET Core Identity, Microsoft Entra ID, or another IdP) and issue tokens from that trusted source; validate them with `JwtBearerOptions.Authority` instead of a local key.
 - The signing key is **generated per process** with `RandomNumberGenerator.GetBytes(32)`, so **no key material is checked into this repo** — the same approach used by the SignalR [`JwtSample`](https://github.com/dotnet/aspnetcore/blob/main/src/SignalR/samples/JwtSample/Startup.cs) in `dotnet/aspnetcore`. Restarting the server invalidates tokens from the previous run.
-- The sample runs over plain **HTTP** on localhost. Production must use **HTTPS**. Browser clients on WebSockets/SSE can't set an `Authorization` header and send the token in the query string, which is commonly logged — see [SignalR security: access token logging](https://learn.microsoft.com/aspnet/core/signalr/security#access-token-logging). (The .NET client used here sends an `Authorization` header instead.)
-- **Enabling `EnableAuthenticationRefresh` opts a connection out of SignalR's built-in "reject if the user changed" hardening** — the app owns that policy. This sample's `OnAuthenticationRefresh` compares the `sub` claim of `PreviousUser` and `NewUser` and rejects any refresh that would re-bind a live connection to a different identity.
-- What the sample does follow: `[Authorize]` on the hub, full token validation (issuer/audience/key/lifetime), the query-string token restricted to the hub path, an identity check on refresh, and `CloseOnAuthenticationExpiration` so a connection that isn't refreshed is closed at token expiry.
+- **Enabling `EnableAuthenticationRefresh` hands principal-change policy to the app.** SignalR normally rejects a request whose user differs from the one a connection is bound to; for connections that span requests (long polling, stateful reconnect) that transport-level check is skipped once refresh is enabled, because `OnAuthenticationRefresh` is now the place to make that call. The hub layer still aborts a connection whose user identifier changes, so an identity swap never silently succeeds — but that abort happens *after* the refresh request has already returned success. This sample's `OnAuthenticationRefresh` compares the `sub` claim of `PreviousUser` and `NewUser` and rejects the refresh with `403` while it's still in flight, so the client gets an actionable error and keeps running on its current token.
+- What the sample does follow: `[Authorize]` on the hub, HTTPS, full token validation (issuer/audience/key/lifetime), an identity check on refresh, and `CloseOnAuthenticationExpiration` so a connection that isn't refreshed is closed at token expiry.
 
 ### BackendApi
 Minimal Web API that serves weather data at `/api/weather`. It is the backend service that
@@ -172,26 +171,32 @@ browser dev tools **Network** tab (enable "Preserve log") to see the request car
 
 ### SignalR authentication refresh
 
-Run the server and client in separate terminals. The client output should show ticks continuing across at least one 45-second token expiry and an `AUTH REFRESHED` line without any reconnect or close.
+Start the server, then run the client. In Visual Studio, right-click `SignalRFeatures` → **Debug** →
+**Start Without Debugging**, then set `SignalRClient` as the startup project and Ctrl+F5. From the
+command line:
 
 ```pwsh
-# Terminal 1 — SignalR server on http://localhost:5110
-dotnet run --project SignalRFeatures --launch-profile http
+# Terminal 1 — SignalR server on https://localhost:7110
+dotnet run --project SignalRFeatures
 
-# Terminal 2 — .NET SignalR client for 75 seconds
-dotnet run --project SignalRClient -- --server http://localhost:5110 --user alice --duration-seconds 75
+# Terminal 2 — ticks continue across a role change and a token expiry
+dotnet run --project SignalRClient
 ```
+
+The client shows `roles=user` for the first few ticks. At 8 seconds it promotes `alice` and calls
+`RefreshAuthenticationAsync()`, so the next tick reads `roles=user,admin` on the same connection id.
+Around 40 seconds the automatic refresh fires and `token-exp` moves forward.
 
 To show the previous behavior for contrast, disable client auto-refresh. Because the hub also sets `CloseOnAuthenticationExpiration`, the connection closes when the 45-second token expires:
 
 ```pwsh
-dotnet run --project SignalRClient -- --server http://localhost:5110 --user alice --duration-seconds 55 --no-refresh
+dotnet run --project SignalRClient -- --no-refresh --duration-seconds 60
 ```
 
 To show the identity check, have the client request its *refresh* token for a different user. The server's `OnAuthenticationRefresh` compares the `sub` claim and rejects the refresh with `403`, so the connection is never re-bound to `bob`:
 
 ```pwsh
-dotnet run --project SignalRClient -- --server http://localhost:5110 --user alice --refresh-as bob --duration-seconds 55
+dotnet run --project SignalRClient -- --refresh-as bob --duration-seconds 55
 ```
 
 ### Blazor Gateway backend proxy (no CORS)
