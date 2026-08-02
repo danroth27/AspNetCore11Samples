@@ -15,13 +15,15 @@
 
 <p class="text-muted">
     No <code>MarkupString</code> case: raw HTML in a public parameter is an XSS footgun.
-    Preview 6 Razor limitations apply to union-typed parameters — literal attributes
-    (<a href="https://github.com/dotnet/razor/issues/13188" target="_blank">#13188</a>) and
-    child-content markup (<a href="https://github.com/dotnet/razor/issues/13200" target="_blank">#13200</a>)
-    aren't supported yet, so set the parameter with an expression.
+    Preview 7 fixed the literal-attribute form for union-typed parameters
+    (<a href="https://github.com/dotnet/razor/issues/13188" target="_blank">#13188</a>), so the
+    string case is set directly below. Child-content markup still doesn't populate the
+    <code>RenderFragment</code> case
+    (<a href="https://github.com/dotnet/razor/issues/13200" target="_blank">#13200</a>), so that
+    case is built as an expression.
 </p>
 
-<Toast Message="@("Saved 3 items.")" Severity="ToastSeverity.Success" />
+<Toast Message="Saved 3 items." Severity="ToastSeverity.Success" />
 <Toast Message="@_rich" Severity="ToastSeverity.Warning" />
 
 @code {

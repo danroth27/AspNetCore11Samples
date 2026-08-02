@@ -27,7 +27,7 @@ internal sealed class TokenProvider(HttpClient http, string user, string? refres
         // rejecting a refresh that would change the connection's identity.
         var tokenUser = _issued == 0 ? user : refreshAs ?? user;
 
-        var response = await http.PostAsync($"/token?user={Uri.EscapeDataString(tokenUser)}", content: null);
+        using var response = await http.PostAsync($"/token?user={Uri.EscapeDataString(tokenUser)}", content: null);
         response.EnsureSuccessStatusCode();
 
         _current = await response.Content.ReadFromJsonAsync<TokenResponse>()

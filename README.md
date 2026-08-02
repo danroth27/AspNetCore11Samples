@@ -42,17 +42,18 @@ and features. Demos are grouped by the preview that introduced them.
   boxed-union parameter. Requires `<LangVersion>preview</LangVersion>` and
   `<EnablePreviewFeatures>true</EnablePreviewFeatures>`.
   The union deliberately omits a `MarkupString` (raw HTML) case to avoid an XSS footgun.
-  Current Razor limitations for union-typed parameters: the literal-attribute shortcut
-  (`Content="hello"`) doesn't compile — use the expression form `Content="@("hello")"`
-  ([dotnet/razor#13188](https://github.com/dotnet/razor/issues/13188)) — and child-content
-  markup doesn't populate a `RenderFragment` case
+  Preview 7 fixed the literal-attribute shortcut for union-typed parameters, so
+  `Content="hello"` now compiles ([dotnet/razor#13188](https://github.com/dotnet/razor/issues/13188)).
+  One Razor limitation remains: child-content markup doesn't populate a `RenderFragment` case
   ([dotnet/razor#13200](https://github.com/dotnet/razor/issues/13200)).
   See the design note: [aspnet/specs#782](https://github.com/aspnet/specs/pull/782).
   The `Toast` component and `ToastMessage` union live in the shared `SharedComponents`
   Razor Class Library (referenced by both the Server and WebAssembly apps).
-- **Virtualize scroll-to-item** (`/virtualize-scroll`) — `Virtualize<TItem>.InitialIndex`
-  opens a large list at a given item, and `ScrollToIndexAsync` scrolls to any item on demand
+- **Virtualize scroll-to-item** (`/virtualize-scroll`) — `Virtualize<TItem>.InitialItemIndex`
+  opens a large list at a given item, and `ScrollToItemAsync` scrolls to any item on demand
   ([dotnet/aspnetcore#66753](https://github.com/dotnet/aspnetcore/pull/66753)).
+  These shipped in Preview 6 as `InitialIndex` and `ScrollToIndexAsync`; Preview 7 renamed both
+  ([dotnet/aspnetcore#67914](https://github.com/dotnet/aspnetcore/pull/67914)).
 - **Configure client from server** (`/browser-options`) — `WithBrowserOptions` sets client-side
   startup behavior (log level, reconnection, DOM preservation) from the server in C# instead of
   hand-written `Blazor.start` JavaScript; the page reads the resolved options with
@@ -61,7 +62,8 @@ and features. Demos are grouped by the preview that introduced them.
   new cross-origin checks (`Sec-Fetch-Site`/`Origin`) with no antiforgery token and no
   `app.UseAntiforgery()` ([dotnet/aspnetcore#66585](https://github.com/dotnet/aspnetcore/pull/66585)).
   The separate `CsrfAttackerSite` project forges a cross-site POST against this form.
-- **Cache SSR output with `CacheView`** (`/cache-view`, Preview 7) — caches the rendered HTML of a
+**Preview 7**
+- **Cache SSR output with `CacheView`** (`/cache-view`) — caches the rendered HTML of a
   statically rendered subtree with `ExpiresAfter` and vary-by dimensions. On a cache hit the
   children are not instantiated at all. Also shows the `[CacheBehavior(CacheBehavior.Rerender)]`
   "hole" that keeps updating inside a cached region, and the `[CacheCondition]` guard that forces
@@ -69,18 +71,18 @@ and features. Demos are grouped by the preview that introduced them.
   `CacheView` picks up from DI automatically
   ([dotnet/aspnetcore#65772](https://github.com/dotnet/aspnetcore/pull/65772),
   [#67776](https://github.com/dotnet/aspnetcore/pull/67776)).
-- **QuickGrid scroll-to-item** (`/quickgrid-scroll`, Preview 7) — `QuickGrid` forwards
+- **QuickGrid scroll-to-item** (`/quickgrid-scroll`) — `QuickGrid` forwards
   `InitialItemIndex` and `ScrollToItemAsync` to its inner `Virtualize`, so a virtualized grid can
   open at a specific row and be scrolled programmatically
   ([dotnet/aspnetcore#67914](https://github.com/dotnet/aspnetcore/pull/67914)).
-- **Automatic circuit pause** (`/auto-pause`, Preview 7) — the circuit pauses itself after the tab
+- **Automatic circuit pause** (`/auto-pause`) — the circuit pauses itself after the tab
   has been hidden for `HiddenDelay`, releasing the SignalR connection and server memory. Configured
   with `options.AddAutoPause(...)` from the `Microsoft.AspNetCore.Components.Server.AutoPause`
   package. `wwwroot/BlazorFeatures.lib.module.js` registers a client-side circuit handler with
   `onCircuitPausing` to defer the pause while work is in flight
   ([dotnet/aspnetcore#67098](https://github.com/dotnet/aspnetcore/pull/67098),
   [#67045](https://github.com/dotnet/aspnetcore/pull/67045)).
-- **New Blazor analyzers** (`/analyzers`, Preview 7) — `AnalyzerDemo.razor` deliberately violates
+- **New Blazor analyzers** (`/analyzers`) — `AnalyzerDemo.razor` deliberately violates
   `BL0012`–`BL0016`, so building the project reports all five new diagnostics.
 
 ### BlazorFeatures.E2E.Tests

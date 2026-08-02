@@ -17,7 +17,10 @@ using var http = new HttpClient { BaseAddress = new Uri(options.ServerUrl) };
 var tokens = new TokenProvider(http, options.User, options.RefreshAs);
 
 // Clear any promotion left over from an earlier run so the demo always starts from a standard user.
-await http.PostAsync($"/reset?user={Uri.EscapeDataString(options.User)}", content: null);
+using (var resetResponse = await http.PostAsync($"/reset?user={Uri.EscapeDataString(options.User)}", content: null))
+{
+    resetResponse.EnsureSuccessStatusCode();
+}
 
 var refreshes = 0;
 var refreshFailures = 0;
@@ -92,7 +95,7 @@ async Task PromoteAsync()
     {
         await Task.Delay(options.PromoteAfter, runCts.Token);
 
-        var response = await http.PostAsync($"/promote?user={Uri.EscapeDataString(options.User)}", content: null, runCts.Token);
+        using var response = await http.PostAsync($"/promote?user={Uri.EscapeDataString(options.User)}", content: null, runCts.Token);
         response.EnsureSuccessStatusCode();
 
         Console.WriteLine($"*** PROMOTED '{options.User}' TO ADMIN at {DateTimeOffset.Now:HH:mm:ss}; refreshing in place ***");

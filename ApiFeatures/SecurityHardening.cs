@@ -39,10 +39,14 @@ public static class SecurityHardening
         //   GET /segment-guard/bar      -> matched, remaining '/bar'
         //   GET /segment-guard%5Cbar    -> matched, remaining '\bar'   <-- Preview 7
         //   GET /segment-guardbar       -> 404 (not a segment boundary)
+        //
+        // Request.Path.Value is the decoded path; interpolating the PathString itself
+        // would re-escape it and print '%5Cbar' instead of the '\bar' that makes the
+        // segment-boundary change visible.
         app.Map("/segment-guard", branch => branch.Run(async context =>
         {
             await context.Response.WriteAsync(
-                $"matched. PathBase='{context.Request.PathBase}' Path='{context.Request.Path}'");
+                $"matched. PathBase='{context.Request.PathBase.Value}' Path='{context.Request.Path.Value}'");
         }));
 
         // #67635: RFC 9110 defines Content-Length as 1*DIGIT, but the underlying UTF-8
