@@ -75,7 +75,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         new JsonStringEnumConverter(JsonNamingPolicy.KebabCaseLower));
 });
 
+builder.Services.AddAntiforgery();
+
 var app = builder.Build();
+
+app.UseAntiforgery();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -280,6 +284,8 @@ app.MapGet("/todos", () => TypedResults.Ok<Todo[]>(new[]
 app.MapUnions();          // C# unions in minimal APIs (anyOf in OpenAPI)
 app.MapAsyncValidation(); // Async validation for minimal APIs
 app.MapChannelBinding();  // Preview 7: TLS channel binding token access (#67436)
+app.MapServerSentEvents(); // Preview 7: SSE described with OpenAPI 3.2 itemSchema (#67461)
+app.MapSecurityHardening(); // Preview 7: rewrite, PathString, Content-Length, and CSRF hardening
 
 app.Run();
 
@@ -318,3 +324,5 @@ class JsonWrapper
 }
 
 record SearchRequest(string? Query, string[]? Categories, double? MaxPrice);
+
+

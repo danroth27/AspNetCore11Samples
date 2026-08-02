@@ -1,0 +1,135 @@
+@page "/cache-view"
+@using Microsoft.AspNetCore.Components
+
+<PageTitle>CacheView</PageTitle>
+
+<h1>Cache SSR output with <code>CacheView</code></h1>
+
+<p>
+    Preview 7 adds <code>CacheView</code>, a component that caches the rendered HTML of a
+    statically rendered subtree
+    (<a href="https://github.com/dotnet/aspnetcore/pull/65772">dotnet/aspnetcore #65772</a>,
+    <a href="https://github.com/dotnet/aspnetcore/pull/67776">#67776</a>).
+    On a cache hit the children are not instantiated or rendered at all &mdash; the captured
+    HTML is replayed &mdash; so an expensive fragment costs nothing on subsequent requests.
+</p>
+
+<p>
+    This page is statically rendered (no <code>@@rendermode</code>). Caching only applies to
+    static SSR on GET requests; it is skipped for non-GET requests, when
+    <code>Enabled="false"</code>, and inside streaming SSR.
+</p>
+
+<h2>Cached for 30 seconds</h2>
+
+<p>
+    The panel below is wrapped in <code>&lt;CacheView ExpiresAfter="TimeSpan.FromSeconds(30)"&gt;</code>.
+    Its "rendered at" timestamp and render counter come from the child component itself, so
+    they only change when the child actually runs. Reload the page repeatedly: the outer
+    timestamp updates every time, the cached one does not until the entry expires.
+</p>
+
+<CacheView ExpiresAfter="TimeSpan.FromSeconds(30)" CacheKey="fixed">
+    <ExpensivePanel Title="Cached (30s)" />
+</CacheView>
+
+<h2>Varying the cache key</h2>
+
+<p>
+    <code>VaryByQuery</code> adds query-string values to the cache key, so each distinct value
+    gets its own cached copy. Try
+    <a href="/cache-view?tenant=contoso">?tenant=contoso</a>,
+    <a href="/cache-view?tenant=fabrikam">?tenant=fabrikam</a>, and
+    <a href="/cache-view">no query string</a> &mdash; each one caches independently.
+</p>
+
+<CacheView ExpiresAfter="TimeSpan.FromMinutes(5)" VaryByQuery="tenant" CacheKey="by-tenant">
+    <ExpensivePanel Title="Cached per ?tenant= value" />
+</CacheView>
+
+<h2>Not cached, for comparison</h2>
+
+<p>
+    The same component outside a <code>CacheView</code>. Its timestamp and counter change on
+    every request, which is what the cached panels above would do without caching.
+</p>
+
+<ExpensivePanel Title="Never cached" />
+
+<h2>Holes: components that must not be baked into cached HTML</h2>
+
+<p>
+    Some output depends on per-request state and must not be frozen into a cached fragment.
+    Preview 7 adds two attributes for component authors:
+</p>
+
+<ul>
+    <li>
+        <code>[CacheBehavior(CacheBehavior.Rerender)]</code> &mdash; the component is a "hole"
+        that re-renders on every request even inside a cache hit.
+        <code>AntiforgeryToken</code> and <code>HeadOutlet</code> are annotated this way.
+    </li>
+    <li>
+        <code>[CacheBehavior(CacheBehavior.Throw)]</code> &mdash; the component refuses to be
+        cached. <code>Virtualize&lt;T&gt;</code> carries this with no condition, so it can never
+        appear inside a <code>CacheView</code>.
+    </li>
+    <li>
+        <code>[CacheCondition(CacheVaryBy.…)]</code> &mdash; pairs with <code>Throw</code> to say
+        <em>which</em> vary-by dimension makes caching safe. <code>AuthorizeView</code> requires
+        <code>VaryByUser</code>; <code>QuickGrid</code> requires <code>VaryByQuery</code>.
+    </li>
+</ul>
+
+<p>
+    <code>PerRequestStamp</code> below is marked <code>[CacheBehavior(CacheBehavior.Rerender)]</code>
+    and sits inside the same cached region as a plain child. The plain child freezes; the
+    re-render hole keeps updating.
+</p>
+
+<CacheView ExpiresAfter="TimeSpan.FromSeconds(30)" CacheKey="with-hole">
+    <ExpensivePanel Title="Frozen sibling" />
+    <PerRequestStamp />
+</CacheView>
+
+<p>
+    The grid below is a <code>QuickGrid</code> inside a <code>CacheView</code>. It renders only
+    because the boundary sets <code>VaryByQuery</code>. Remove that attribute and the request
+    fails with:
+</p>
+
+<blockquote class="text-danger">
+    <small>
+        Component 'QuickGrid&lt;Row&gt;' cannot be used inside a CacheView because its output
+        depends on per-request state ([CacheBehavior(CacheBehavior.Throw)],
+        [CacheCondition(CacheVaryBy.Query)]) that cannot be safely cached and replayed. To fix
+        this, configure the CacheView to vary by Query, or move the component outside the
+        CacheView.
+    </small>
+</blockquote>
+
+<CacheView ExpiresAfter="TimeSpan.FromSeconds(30)" CacheKey="grid" VaryByQuery="page">
+    <QuickGrid Items="@rows.AsQueryable()">
+        <PropertyColumn Property="@(r => r.Id)" Title="#" />
+        <PropertyColumn Property="@(r => r.Name)" />
+    </QuickGrid>
+</CacheView>
+
+<h2>Where the cached HTML is stored</h2>
+
+<p>
+    By default <code>CacheView</code> uses an in-memory store bounded by
+    <code>RazorComponentsServiceOptions.CacheViewSizeLimit</code> (100&nbsp;MB by default).
+    If the app registers <code>HybridCache</code>, <code>CacheView</code> picks it up
+    automatically and you get a two-tier local/distributed cache with no code change.
+    This app registers it in <code>Program.cs</code>.
+</p>
+
+<p><em>Request rendered at @DateTime.Now.ToString("HH:mm:ss.fff") (never cached &mdash; page root).</em></p>
+
+@code {
+    private record Row(int Id, string Name);
+
+    private static readonly List<Row> rows =
+        Enumerable.Range(1, 4).Select(i => new Row(i, $"Row {i}")).ToList();
+}

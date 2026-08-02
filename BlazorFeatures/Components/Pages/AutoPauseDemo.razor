@@ -1,0 +1,88 @@
+@page "/auto-pause"
+@rendermode InteractiveServer
+
+<PageTitle>Automatic circuit pause</PageTitle>
+
+<h1>Automatic circuit pause</h1>
+
+<p>
+    Preview 6 added <code>Circuit.RequestCircuitPauseAsync</code> so the <em>server</em> could
+    pause a circuit on demand. Preview 7 adds the matching client-driven path: the circuit
+    pauses itself after the browser tab has been hidden for a configurable delay, releasing the
+    SignalR connection and its server-side memory until the user comes back
+    (<a href="https://github.com/dotnet/aspnetcore/pull/67098">dotnet/aspnetcore #67098</a>,
+    <a href="https://github.com/dotnet/aspnetcore/pull/67045">#67045</a>).
+</p>
+
+<p>
+    The behavior ships in a separate opt-in package,
+    <code>Microsoft.AspNetCore.Components.Server.AutoPause</code>, and is configured on the
+    render mode's browser options. See <code>Program.cs</code>:
+</p>
+
+<pre><code>app.MapRazorComponents&lt;App&gt;()
+    .AddInteractiveServerRenderMode()
+    .WithBrowserOptions(options =&gt;
+    {
+        options.AddAutoPause(pause =&gt;
+        {
+            pause.Enabled = true;                          // default
+            pause.HiddenDelay = TimeSpan.FromSeconds(30);  // default is 2 minutes
+        });
+    });</code></pre>
+
+<h2>Try it</h2>
+
+<ol>
+    <li>Open the browser dev tools console.</li>
+    <li>Increment the counter so you can tell live state from restored state.</li>
+    <li>Switch to another tab (or minimize) and wait 30 seconds.</li>
+    <li>
+        Come back. The console shows the pause deferral running, then the circuit pausing and
+        resuming. The counter value survives, because pause preserves circuit state.
+    </li>
+</ol>
+
+<p>Counter: <strong>@count</strong></p>
+<button class="btn btn-primary" @onclick="() => count++">Increment</button>
+
+<h2>Deferring a pause</h2>
+
+<p>
+    Auto-pause defers itself while a pause would lose data or interrupt work in progress. The
+    shipped checks are: a text input or <code>contenteditable</code> element whose value differs
+    from its default, an <code>&lt;audio&gt;</code>/<code>&lt;video&gt;</code> element that is
+    playing unmuted, an open Picture-in-Picture window, a held
+    <a href="https://developer.mozilla.org/docs/Web/API/Web_Locks_API">Web Lock</a>, and any
+    in-flight circuit activity (JS interop calls, stream transfers, queued renders).
+</p>
+
+<p>
+    Type something into the box below, then hide the tab: the pause is deferred for as long as
+    the field stays dirty. Clear it and the pause proceeds.
+</p>
+
+<input class="form-control mb-3" placeholder="Type here to block auto-pause" />
+
+<p>
+    Apps can add their own deferral with a <strong>circuit handler</strong> that implements
+    <code>onCircuitPausing(signal)</code>. Blazor awaits every registered handler before it
+    pauses &mdash; for both auto-pause and server-initiated pauses. Register it from a JS
+    initializer (see <code>wwwroot/BlazorFeatures.lib.module.js</code>):
+</p>
+
+<pre><code>export function beforeWebStart(options) {
+  options.circuit ??= {};
+  options.circuit.circuitHandlers ??= [];
+  options.circuit.circuitHandlers.push({
+    onCircuitPausing: async (signal) =&gt; {
+      // Persist in-progress state. `signal` aborts if the pause is cancelled,
+      // for example because the tab became visible again.
+      await savePendingWork(signal);
+    },
+  });
+}</code></pre>
+
+@code {
+    private int count;
+}

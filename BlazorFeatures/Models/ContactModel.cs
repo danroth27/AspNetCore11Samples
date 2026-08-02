@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Validation;
 
 namespace BlazorFeatures.Models;
 

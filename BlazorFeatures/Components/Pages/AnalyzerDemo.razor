@@ -1,0 +1,72 @@
+@page "/analyzers"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IJSRuntime JS
+
+<PageTitle>New Blazor analyzers</PageTitle>
+
+<h1>New Blazor analyzers (BL0012&ndash;BL0016)</h1>
+
+<p>
+    Preview 7 adds five analyzers to the Blazor SDK. All are on by default and ship as
+    <code>Warning</code>. This page deliberately violates each one, so building the project
+    prints all five. Look at <code>Components/Pages/AnalyzerDemo.razor</code> and the build
+    output side by side.
+</p>
+
+<table class="table">
+    <thead>
+        <tr><th>ID</th><th>Diagnostic</th></tr>
+    </thead>
+    <tbody>
+        <tr><td><code>BL0012</code></td><td>Unnecessary <code>StateHasChanged</code> call</td></tr>
+        <tr><td><code>BL0013</code></td><td><code>AuthenticationStateProvider</code> used without subscribing to <code>AuthenticationStateChanged</code></td></tr>
+        <tr><td><code>BL0014</code></td><td><code>for</code>-loop iterator variable captured by a closure</td></tr>
+        <tr><td><code>BL0015</code></td><td><code>[JSInvokable]</code> method should be <code>public</code></td></tr>
+        <tr><td><code>BL0016</code></td><td>JS interop call is not guarded by <code>try</code>/<code>catch</code></td></tr>
+    </tbody>
+</table>
+
+<p>Clicked: <strong>@clicks</strong></p>
+
+@* BL0014: `i` is captured by the lambda, so every button reports the final value. *@
+@for (var i = 0; i < 3; i++)
+{
+    <button class="btn btn-outline-primary me-1" @onclick="() => clicks = i">Set to @i</button>
+}
+
+<button class="btn btn-primary mt-2" @onclick="RunInteropAsync">Run JS interop</button>
+<button class="btn btn-secondary mt-2" @onclick="Increment">Increment</button>
+
+@code {
+    private int clicks;
+
+    [Inject] private AuthenticationStateProvider AuthProvider { get; set; } = default!;
+
+    // BL0012: StateHasChanged is redundant here. Event handlers already re-render
+    // the component after they complete.
+    private void Increment()
+    {
+        clicks++;
+        StateHasChanged();
+    }
+
+    // BL0013: reads authentication state but never subscribes to
+    // AuthenticationStateChanged, so the UI won't update when the user signs in or out.
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthProvider.GetAuthenticationStateAsync();
+        _ = state.User.Identity?.IsAuthenticated;
+    }
+
+    // BL0016: JS interop can fail when the circuit is disconnecting or the element
+    // is gone, so calls should be wrapped in try/catch.
+    private async Task RunInteropAsync()
+    {
+        await JS.InvokeVoidAsync("console.log", "hello from Blazor");
+    }
+
+    // BL0015: [JSInvokable] methods must be public to be callable from JavaScript.
+    [JSInvokable]
+    private void NotifyFromJs() => clicks++;
+}

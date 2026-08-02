@@ -1,0 +1,37 @@
+@* A deliberately slow component, so a CacheView hit is easy to observe.
+   The render counter is static: it only advances when this component actually
+   renders, which is exactly what CacheView prevents on a cache hit. *@
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h3 class="card-title h5">@Title</h3>
+        <p class="card-text mb-1">
+            Rendered at <strong>@renderedAt.ToString("HH:mm:ss.fff")</strong>
+        </p>
+        <p class="card-text mb-1">
+            This component has rendered <strong>@renderCount</strong> time(s) since the app started.
+        </p>
+        <p class="card-text text-muted mb-0">
+            <small>Simulated work: @WorkMilliseconds ms</small>
+        </p>
+    </div>
+</div>
+
+@code {
+    private static int renderCount;
+
+    [Parameter] public string Title { get; set; } = "Expensive panel";
+
+    [Parameter] public int WorkMilliseconds { get; set; } = 250;
+
+    private DateTime renderedAt;
+
+    protected override void OnInitialized()
+    {
+        // Stand-in for genuinely expensive work (a database query, a template render, ...).
+        Thread.Sleep(WorkMilliseconds);
+
+        renderCount = Interlocked.Increment(ref renderCount);
+        renderedAt = DateTime.Now;
+    }
+}
