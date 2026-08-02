@@ -61,10 +61,6 @@
             InputMessage ??= "Hello from TempData!";
         }
 
-        // Workaround for https://github.com/dotnet/aspnetcore/issues/65720:
-        // trigger lazy loading before calling Get()
-        _ = TempData?.ContainsKey("Message");
-
         // Get reads and removes the value (one-time use)
         message = TempData?.Get("Message") as string;
     }
