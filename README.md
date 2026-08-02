@@ -109,6 +109,7 @@ Web API (minimal APIs) demonstrating framework features:
 - **Kestrel trailer header timeout** (Preview 5) — `RequestHeadersTimeout` applies to HTTP/2 and HTTP/3 trailer frames
 - **C# unions** (Preview 6) — union return types are described with `anyOf` in OpenAPI and serialized by their active case (`GET /pets/{id}`); a union body binds by JSON token type (`POST /pets/adopt`)
 - **Async validation** (Preview 6) — `AsyncValidationAttribute` (`POST /register`) and `IAsyncValidatableObject` (`POST /reservations`) run during minimal-API validation via `AddValidation()`
+- **TLS channel binding token access** (Preview 7, [dotnet/aspnetcore#67436](https://github.com/dotnet/aspnetcore/pull/67436), follow-up [#67720](https://github.com/dotnet/aspnetcore/pull/67720)) — `GET /channel-binding` reads the RFC 5929 `tls-server-end-point` token from `ITlsConnectionFeature.TryGetChannelBindingBytes(ChannelBindingKind.Endpoint, out ...)`. Channel binding ties an authentication exchange to the specific TLS channel, defeating auth-relay / MITM attacks that replay credentials onto another connection. Kestrel implements it over `SslStream.TransportContext.GetChannelBinding`, so it works on any HTTPS connection — **run with the `https` profile** (`dotnet run --project ApiFeatures --launch-profile https`) and call `https://localhost:7123/channel-binding`. The endpoint returns a SHA-256 fingerprint of the token (the token derives from the public server certificate, so it isn't secret) rather than the raw bytes. On HTTP.sys the new `HttpSysOptions.HttpAuthenticationHardeningLevel` (Legacy/Medium/Strict, default Medium) additionally lets the OS enforce channel binding on Windows auth, and Strict fails startup if that hardening can't be applied (#67720).
 
 
 ### SignalRFeatures and SignalRClient
@@ -141,7 +142,7 @@ See [Automatic CSRF protection demo](#automatic-csrf-protection-demo) for how to
 
 ## Running the Samples
 
-Requires the .NET 11 Preview 6 SDK (`11.0.100-preview.6.26359.118`) or later.
+Requires the .NET 11 Preview 7 SDK (`11.0.100-preview.7.26381.103`) or later.
 
 ```pwsh
 dotnet build

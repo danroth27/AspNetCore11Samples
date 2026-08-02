@@ -1,4 +1,5 @@
 @ApiFeatures_HostAddress = http://localhost:5091
+@ApiFeatures_HttpsAddress = https://localhost:7123
 
 #if (EnableOpenAPI)
 ### OpenAPI document (v3.2 with QUERY support)
@@ -120,6 +121,22 @@ Content-Type: application/json
 { "email": "guest@example.com", "date": "2026-07-22" }
 
 ###
+
+# =====================================================================
+# TLS channel binding token access (.NET 11 Preview 7, #67436)
+# =====================================================================
+
+### Channel binding over HTTPS — returns the tls-server-end-point token info
+# Run with the 'https' profile: dotnet run --project ApiFeatures --launch-profile https
+GET {{ApiFeatures_HttpsAddress}}/channel-binding
+Accept: application/json
+
+###
+
+### Channel binding over plain HTTP — HttpsRedirection sends a 307 to the HTTPS URL
+# (the endpoint's no-TLS branch only runs if HTTPS redirection is bypassed)
+GET {{ApiFeatures_HostAddress}}/channel-binding
+Accept: application/json
 
 ###
 

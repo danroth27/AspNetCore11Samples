@@ -279,6 +279,7 @@ app.MapGet("/todos", () => TypedResults.Ok<Todo[]>(new[]
 // Endpoints demonstrating C# unions and async validation in minimal APIs.
 app.MapUnions();          // C# unions in minimal APIs (anyOf in OpenAPI)
 app.MapAsyncValidation(); // Async validation for minimal APIs
+app.MapChannelBinding();  // Preview 7: TLS channel binding token access (#67436)
 
 app.Run();
 
