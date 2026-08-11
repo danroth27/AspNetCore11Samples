@@ -81,7 +81,9 @@ and features. Demos are grouped by the preview that introduced them.
   package. The sample logs browser visibility transitions so it is clear when the hidden timer
   starts, and its counter uses `[PersistentState(AllowUpdates = true)]` because ordinary component
   fields are not automatically serialized across pause/resume. `wwwroot/BlazorFeatures.lib.module.js`
-  also registers a client-side circuit handler with `onCircuitPausing` to defer the pause while work is in flight
+  registers a client-side circuit handler with `onCircuitPausing` to defer the pause while work is in flight.
+  The Preview 7 build doesn't currently copy server-provided extension values into the JS initializer's
+  circuit options, so `beforeWebStart` contains a temporary fallback for the same enabled/10-second values.
   ([dotnet/aspnetcore#67098](https://github.com/dotnet/aspnetcore/pull/67098),
   [#67045](https://github.com/dotnet/aspnetcore/pull/67045)).
 - **New Blazor analyzers** (`/analyzers`) — `AnalyzerDemo.razor` deliberately violates

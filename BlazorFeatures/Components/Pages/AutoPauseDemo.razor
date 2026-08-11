@@ -31,6 +31,13 @@
         });
     });</code></pre>
 
+<div class="alert alert-warning">
+    <strong>Preview 7 build note:</strong> The server serializes these extension settings into
+    the page, but this build doesn't flow them into the circuit options read by the auto-pause
+    JS initializer. The sample's <code>beforeServerStart</code> supplies the same values as a
+    temporary fallback. Remove that fallback once the framework mapping is fixed.
+</div>
+
 <h2>Try it</h2>
 
 <ol>

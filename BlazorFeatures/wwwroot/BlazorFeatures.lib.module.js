@@ -11,15 +11,34 @@
 
 let circuitBusy = false;
 let hiddenDiagnosticTimer;
+let hiddenDelay = 120_000;
+let circuitHandlerRegistered = false;
 
 export function beforeWebStart(options) {
   options.circuit ??= {};
-  options.circuit.circuitHandlers ??= [];
 
-  const hiddenDelay = options.circuit.autoPauseHiddenDelayMilliseconds ?? 120_000;
+  // Preview 7 workaround: WithBrowserOptions serializes these extension values in the
+  // Blazor-Configuration marker, but they aren't copied into the circuit options passed
+  // to JS initializers. The AutoPause package initializer runs after this app initializer
+  // and reads them here, so provide the same values only when they're absent. Remove this
+  // fallback once the framework flows extensions into the initializer options.
+  options.circuit.autoPauseEnabled ??= true;
+  options.circuit.autoPauseHiddenDelayMilliseconds ??= 10_000;
+
+  hiddenDelay = options.circuit.autoPauseHiddenDelayMilliseconds ?? 120_000;
   console.log(
-    `[auto-pause] initialized; document visibility is ${document.visibilityState}; ` +
+    `[auto-pause] initializer loaded; document visibility is ${document.visibilityState}; ` +
     `hidden delay is ${hiddenDelay} ms.`);
+
+  options.circuit.circuitHandlers ??= [];
+  if (!circuitHandlerRegistered) {
+    circuitHandlerRegistered = true;
+    options.circuit.circuitHandlers.push({
+      onCircuitPausing: handleCircuitPausing,
+      onCircuitOpened: () => console.log('[circuit] opened'),
+      onCircuitClosed: () => console.log('[circuit] closed'),
+    });
+  }
 
   document.addEventListener('visibilitychange', () => {
     console.log(`[auto-pause] visibility changed to ${document.visibilityState}.`);
@@ -51,31 +70,26 @@ export function beforeWebStart(options) {
     }
   });
 
-  options.circuit.circuitHandlers.push({
-    onCircuitPausing: async (signal) => {
-      console.log('[auto-pause] circuit is about to pause; flushing pending work...');
-
-      // Stand-in for real work: persist drafts, flush analytics, close a transaction.
-      await new Promise((resolve) => {
-        const id = setTimeout(resolve, 500);
-        signal?.addEventListener('abort', () => {
-          clearTimeout(id);
-          console.log('[auto-pause] pause was cancelled; work aborted.');
-          resolve();
-        }, { once: true });
-      });
-
-      console.log('[auto-pause] done; circuit may now pause.');
-    },
-
-    onCircuitOpened: () => console.log('[circuit] opened'),
-    onCircuitClosed: () => console.log('[circuit] closed'),
-  });
 }
 
 export function afterWebStarted(blazor) {
   blazor.addEventListener?.('circuitactivitychanged', event => {
     circuitBusy = event.busy;
-    console.log(`[auto-pause] circuit activity changed: busy=${circuitBusy}.`);
   });
+}
+
+async function handleCircuitPausing(signal) {
+  console.log('[auto-pause] circuit is about to pause; flushing pending work...');
+
+  // Stand-in for real work: persist drafts, flush analytics, close a transaction.
+  await new Promise((resolve) => {
+    const id = setTimeout(resolve, 500);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(id);
+      console.log('[auto-pause] pause was cancelled; work aborted.');
+      resolve();
+    }, { once: true });
+  });
+
+  console.log('[auto-pause] done; circuit may now pause.');
 }
