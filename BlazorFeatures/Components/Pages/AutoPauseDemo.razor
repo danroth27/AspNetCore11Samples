@@ -27,7 +27,7 @@
         options.AddAutoPause(pause =&gt;
         {
             pause.Enabled = true;                          // default
-            pause.HiddenDelay = TimeSpan.FromSeconds(30);  // default is 2 minutes
+            pause.HiddenDelay = TimeSpan.FromSeconds(10);  // default is 2 minutes
         });
     });</code></pre>
 
@@ -36,15 +36,33 @@
 <ol>
     <li>Open the browser dev tools console.</li>
     <li>Increment the counter so you can tell live state from restored state.</li>
-    <li>Switch to another tab (or minimize) and wait 30 seconds.</li>
     <li>
-        Come back. The console shows the pause deferral running, then the circuit pausing and
-        resuming. The counter value survives, because pause preserves circuit state.
+        Switch to another <em>browser tab</em> (or minimize the browser) and wait 10 seconds.
+        Merely focusing another window, including undocked dev tools, does not make the page
+        hidden and won't trigger auto-pause.
+    </li>
+    <li>
+        Come back. The console shows the visibility transition, pause deferral, disconnect,
+        and resume. The counter value survives because it is explicitly marked with
+        <code>[PersistentState(AllowUpdates = true)]</code>.
     </li>
 </ol>
 
-<p>Counter: <strong>@count</strong></p>
-<button class="btn btn-primary" @onclick="() => count++">Increment</button>
+<div class="alert alert-info">
+    First look for <code>[auto-pause] visibility changed to hidden</code> in the console. If it
+    doesn't appear, the browser never considered this document hidden, so the timer did not start.
+</div>
+
+<p>Persisted counter: <strong>@Count</strong></p>
+<button class="btn btn-primary" @onclick="() => Count++">Increment</button>
+
+<p class="mt-3">
+    Circuit pause does <strong>not</strong> serialize every private field in every component.
+    State that must survive rehydration is opted in explicitly. This counter is:
+</p>
+
+<pre><code>[PersistentState(AllowUpdates = true)]
+public int Count { get; set; }</code></pre>
 
 <h2>Deferring a pause</h2>
 
@@ -84,5 +102,6 @@
 }</code></pre>
 
 @code {
-    private int count;
+    [PersistentState(AllowUpdates = true)]
+    public int Count { get; set; }
 }

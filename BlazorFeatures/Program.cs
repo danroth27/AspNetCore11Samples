@@ -121,13 +121,12 @@ app.MapRazorComponents<App>()
         // Preview 7 (#67098): pause the circuit automatically once the tab has been
         // hidden for HiddenDelay, releasing the SignalR connection and server memory
         // until the user returns. Ships in the Microsoft.AspNetCore.Components.Server.AutoPause
-        // package. 30s here so the behavior is easy to observe; the default is 2 minutes.
+        // package. 10s here so the behavior is easy to observe; the default is 2 minutes.
         options.AddAutoPause(pause =>
         {
             pause.Enabled = true;
-            pause.HiddenDelay = TimeSpan.FromSeconds(30);
+            pause.HiddenDelay = TimeSpan.FromSeconds(10);
         });
     });
 
 app.Run();
-

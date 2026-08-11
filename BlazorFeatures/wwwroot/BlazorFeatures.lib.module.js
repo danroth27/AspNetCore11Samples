@@ -13,6 +13,11 @@ export function beforeWebStart(options) {
   options.circuit ??= {};
   options.circuit.circuitHandlers ??= [];
 
+  console.log(`[auto-pause] initialized; document visibility is ${document.visibilityState}.`);
+  document.addEventListener('visibilitychange', () => {
+    console.log(`[auto-pause] visibility changed to ${document.visibilityState}.`);
+  });
+
   options.circuit.circuitHandlers.push({
     onCircuitPausing: async (signal) => {
       console.log('[auto-pause] circuit is about to pause; flushing pending work...');

@@ -78,8 +78,10 @@ and features. Demos are grouped by the preview that introduced them.
 - **Automatic circuit pause** (`/auto-pause`) — the circuit pauses itself after the tab
   has been hidden for `HiddenDelay`, releasing the SignalR connection and server memory. Configured
   with `options.AddAutoPause(...)` from the `Microsoft.AspNetCore.Components.Server.AutoPause`
-  package. `wwwroot/BlazorFeatures.lib.module.js` registers a client-side circuit handler with
-  `onCircuitPausing` to defer the pause while work is in flight
+  package. The sample logs browser visibility transitions so it is clear when the hidden timer
+  starts, and its counter uses `[PersistentState(AllowUpdates = true)]` because ordinary component
+  fields are not automatically serialized across pause/resume. `wwwroot/BlazorFeatures.lib.module.js`
+  also registers a client-side circuit handler with `onCircuitPausing` to defer the pause while work is in flight
   ([dotnet/aspnetcore#67098](https://github.com/dotnet/aspnetcore/pull/67098),
   [#67045](https://github.com/dotnet/aspnetcore/pull/67045)).
 - **New Blazor analyzers** (`/analyzers`) — `AnalyzerDemo.razor` deliberately violates
