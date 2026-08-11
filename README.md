@@ -79,8 +79,9 @@ and features. Demos are grouped by the preview that introduced them.
   has been hidden for `HiddenDelay`, releasing the SignalR connection and server memory. Configured
   with `options.AddAutoPause(...)` from the `Microsoft.AspNetCore.Components.Server.AutoPause`
   package. Its counter uses `[PersistentState(AllowUpdates = true)]` because ordinary component
-  fields are not automatically serialized across pause/resume. The page also displays its circuit ID
-  so pause/resume can be observed without app-level JavaScript.
+  fields are not automatically serialized across pause/resume. The circuit ID and a non-persisted
+  component-instance ID both change when the circuit is resumed and reconstructed, while the persisted
+  counter keeps its value, making pause/resume observable without app-level JavaScript.
   ([dotnet/aspnetcore#67098](https://github.com/dotnet/aspnetcore/pull/67098),
   [#67045](https://github.com/dotnet/aspnetcore/pull/67045)).
 - **New Blazor analyzers** (`/analyzers`) — `AnalyzerDemo.razor` deliberately violates

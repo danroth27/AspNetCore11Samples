@@ -35,20 +35,32 @@
 <h2>Try it</h2>
 
 <ol>
-    <li>Increment the counter and note the circuit ID.</li>
+    <li>Increment the counter and note the circuit and component instance IDs.</li>
     <li>
         Switch to another <em>browser tab</em> (or minimize the browser) and wait 10 seconds.
         Merely focusing another window, including undocked dev tools, does not make the page
         hidden and won't trigger auto-pause.
     </li>
     <li>
-        Come back. The circuit resumes with a new connection, while the counter value survives
-        because it is explicitly marked with
+        Come back. Both IDs change because a new circuit and component instance were created,
+        while the counter value survives because it is explicitly marked with
         <code>[PersistentState(AllowUpdates = true)]</code>.
     </li>
 </ol>
 
-<p>Circuit ID: <code>@(Tracker.CurrentCircuit?.Id ?? "(connecting)")</code></p>
+<p>
+    Logical circuit ID: <code>@(Tracker.CurrentCircuit?.Id ?? "(connecting)")</code>
+    <small class="text-muted">(changes after pause/resume)</small>
+</p>
+<p>
+    Component instance ID: <code>@_componentInstanceId</code>
+    <small class="text-muted">(also changes when the component is reconstructed)</small>
+</p>
+
+<div class="alert alert-info">
+    If neither ID changes, stop the app and do a clean rebuild. A previously generated static-web-assets
+    manifest may still serve the deleted <code>BlazorFeatures.lib.module.js</code> initializer.
+</div>
 
 <p>Persisted counter: <strong>@Count</strong></p>
 <button class="btn btn-primary" @onclick="() => Count++">Increment</button>
@@ -80,6 +92,8 @@ public int Count { get; set; }</code></pre>
 <input class="form-control mb-3" placeholder="Type here to block auto-pause" />
 
 @code {
+    private readonly string _componentInstanceId = Guid.NewGuid().ToString("N")[..8];
+
     [PersistentState(AllowUpdates = true)]
     public int Count { get; set; }
 }
