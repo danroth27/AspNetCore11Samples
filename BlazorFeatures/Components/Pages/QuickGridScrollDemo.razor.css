@@ -1,0 +1,8 @@
+.quickgrid-scroll {
+    height: 400px;
+    overflow-y: auto;
+}
+
+.quickgrid-scroll ::deep tbody > tr:not([data-blazor-virtualize-reserved-height]) {
+    height: 32px;
+}

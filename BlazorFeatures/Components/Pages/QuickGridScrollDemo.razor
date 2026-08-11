@@ -16,8 +16,8 @@
 <p>
     This grid sets <code>InitialItemIndex="500"</code>, so it renders already scrolled to
     product #500 instead of at the top. Both APIs require <code>Virtualize="true"</code>;
-    <code>ScrollToItemAsync</code> throws <code>InvalidOperationException</code> if
-    virtualization is off or the grid hasn't rendered yet.
+    the fixed 32-pixel row height matches <code>ItemSize</code> so the virtualizer can
+    calculate accurate scroll positions.
 </p>
 
 <div class="mb-3">
@@ -26,12 +26,7 @@
     <button class="btn btn-secondary" @onclick="() => ScrollTo(products.Count - 1)">Jump to end</button>
 </div>
 
-@if (error is not null)
-{
-    <div class="alert alert-danger">@error</div>
-}
-
-<div style="height: 400px; overflow-y: auto;" tabindex="-1">
+<div class="quickgrid-scroll" tabindex="-1">
     <QuickGrid TGridItem="Product" Items="@products.AsQueryable()"
                Virtualize="true"
                ItemSize="32"
@@ -45,26 +40,14 @@
 
 @code {
     private QuickGrid<Product> grid = default!;
-    private string? error;
 
     private static readonly List<Product> products =
         Enumerable.Range(0, 5_000)
             .Select(i => new Product(i, $"Product {i:D4}", 4.99m + (i % 250)))
             .ToList();
 
-    private async Task ScrollTo(int index)
-    {
-        error = null;
-        try
-        {
-            // The last call wins if a scroll is already in flight.
-            await grid.ScrollToItemAsync(index);
-        }
-        catch (InvalidOperationException ex)
-        {
-            error = ex.Message;
-        }
-    }
+    // The last call wins if a scroll is already in flight.
+    private Task ScrollTo(int index) => grid.ScrollToItemAsync(index);
 
     private record Product(int Id, string Name, decimal Price);
 }
