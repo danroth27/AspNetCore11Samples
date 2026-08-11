@@ -1,5 +1,6 @@
 @page "/auto-pause"
 @rendermode InteractiveServer
+@inject CircuitTrackingHandler Tracker
 
 <PageTitle>Automatic circuit pause</PageTitle>
 
@@ -31,35 +32,23 @@
         });
     });</code></pre>
 
-<div class="alert alert-warning">
-    <strong>Preview 7 build note:</strong> The server serializes these extension settings into
-    the page, but this build doesn't flow them into the circuit options read by the auto-pause
-    JS initializer. The sample's <code>beforeServerStart</code> supplies the same values as a
-    temporary fallback. Remove that fallback once the framework mapping is fixed.
-</div>
-
 <h2>Try it</h2>
 
 <ol>
-    <li>Open the browser dev tools console.</li>
-    <li>Increment the counter so you can tell live state from restored state.</li>
+    <li>Increment the counter and note the circuit ID.</li>
     <li>
         Switch to another <em>browser tab</em> (or minimize the browser) and wait 10 seconds.
         Merely focusing another window, including undocked dev tools, does not make the page
         hidden and won't trigger auto-pause.
     </li>
     <li>
-        Come back. The console shows the visibility transition, pause deferral, disconnect,
-        and resume. The counter value survives because it is explicitly marked with
+        Come back. The circuit resumes with a new connection, while the counter value survives
+        because it is explicitly marked with
         <code>[PersistentState(AllowUpdates = true)]</code>.
     </li>
 </ol>
 
-<div class="alert alert-info">
-    First look for <code>[auto-pause] visibility changed to hidden</code> in the console. If it
-    doesn't appear, the browser never considered this document hidden, so the timer did not start.
-    The sample also logs when the 10-second delay elapses and lists any blocker it can observe.
-</div>
+<p>Circuit ID: <code>@(Tracker.CurrentCircuit?.Id ?? "(connecting)")</code></p>
 
 <p>Persisted counter: <strong>@Count</strong></p>
 <button class="btn btn-primary" @onclick="() => Count++">Increment</button>
@@ -89,25 +78,6 @@ public int Count { get; set; }</code></pre>
 </p>
 
 <input class="form-control mb-3" placeholder="Type here to block auto-pause" />
-
-<p>
-    Apps can add their own deferral with a <strong>circuit handler</strong> that implements
-    <code>onCircuitPausing(signal)</code>. Blazor awaits every registered handler before it
-    pauses &mdash; for both auto-pause and server-initiated pauses. Register it from a JS
-    initializer (see <code>wwwroot/BlazorFeatures.lib.module.js</code>):
-</p>
-
-<pre><code>export function beforeWebStart(options) {
-  options.circuit ??= {};
-  options.circuit.circuitHandlers ??= [];
-  options.circuit.circuitHandlers.push({
-    onCircuitPausing: async (signal) =&gt; {
-      // Persist in-progress state. `signal` aborts if the pause is cancelled,
-      // for example because the tab became visible again.
-      await savePendingWork(signal);
-    },
-  });
-}</code></pre>
 
 @code {
     [PersistentState(AllowUpdates = true)]
