@@ -78,10 +78,13 @@ and features. Demos are grouped by the preview that introduced them.
 - **Automatic circuit pause** (`/auto-pause`) — the circuit pauses itself after the tab
   has been hidden for `HiddenDelay`, releasing the SignalR connection and server memory. Configured
   with `options.AddAutoPause(...)` from the `Microsoft.AspNetCore.Components.Server.AutoPause`
-  package. Its counter uses `[PersistentState(AllowUpdates = true)]` because ordinary component
+  package. Its counter uses `[PersistentState]` because ordinary component
   fields are not automatically serialized across pause/resume. The circuit ID and a non-persisted
   component-instance ID both change when the circuit is resumed and reconstructed, while the persisted
-  counter keeps its value, making pause/resume observable without app-level JavaScript.
+  counter keeps its value, making pause/resume observable without app-level JavaScript. With the Preview 7
+  build, open or refresh `/auto-pause` directly before testing. Enhanced navigation from an initially
+  non-interactive page doesn't invoke the package's startup callback
+  ([dotnet/aspnetcore#68337](https://github.com/dotnet/aspnetcore/issues/68337)).
   ([dotnet/aspnetcore#67098](https://github.com/dotnet/aspnetcore/pull/67098),
   [#67045](https://github.com/dotnet/aspnetcore/pull/67045)).
 - **New Blazor analyzers** (`/analyzers`) — `AnalyzerDemo.razor` deliberately violates

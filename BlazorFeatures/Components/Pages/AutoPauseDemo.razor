@@ -44,7 +44,7 @@
     <li>
         Come back. Both IDs change because a new circuit and component instance were created,
         while the counter value survives because it is explicitly marked with
-        <code>[PersistentState(AllowUpdates = true)]</code>.
+        <code>[PersistentState]</code>.
     </li>
 </ol>
 
@@ -58,8 +58,10 @@
 </p>
 
 <div class="alert alert-info">
-    If neither ID changes, stop the app and do a clean rebuild. A previously generated static-web-assets
-    manifest may still serve the deleted <code>BlazorFeatures.lib.module.js</code> initializer.
+    Preview 7 limitation: open or refresh this URL directly before testing. If the app initially loads
+    a non-interactive page and reaches this page through enhanced navigation, the AutoPause package's
+    startup callback isn't invoked and the circuit won't pause
+    (<a href="https://github.com/dotnet/aspnetcore/issues/68337">dotnet/aspnetcore #68337</a>).
 </div>
 
 <p>Persisted counter: <strong>@Count</strong></p>
@@ -70,7 +72,7 @@
     State that must survive rehydration is opted in explicitly. This counter is:
 </p>
 
-<pre><code>[PersistentState(AllowUpdates = true)]
+<pre><code>[PersistentState]
 public int Count { get; set; }</code></pre>
 
 <h2>Deferring a pause</h2>
@@ -94,6 +96,6 @@ public int Count { get; set; }</code></pre>
 @code {
     private readonly string _componentInstanceId = Guid.NewGuid().ToString("N")[..8];
 
-    [PersistentState(AllowUpdates = true)]
+    [PersistentState]
     public int Count { get; set; }
 }

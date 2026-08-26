@@ -19,11 +19,6 @@ builder.Services.AddRazorComponents()
 // (RazorComponentsServiceOptions.CacheViewHybridCache can point at a specific instance.)
 builder.Services.AddHybridCache();
 
-// Required for [SupplyParameterFromTempData] in Blazor SSR (Preview 4 #65306).
-// TempData uses cookie-based storage by default; the controller services
-// register the ITempDataProvider that the new attribute reads from.
-builder.Services.AddControllers();
-
 // Register the CircuitHandler used by /circuit-pause to capture a
 // Circuit reference for Circuit.RequestCircuitPauseAsync (Preview 4 #66265).
 builder.Services.AddScoped<CircuitTrackingHandler>();
