@@ -52,7 +52,7 @@ Accept-Encoding: gzip
 ###
 
 # =====================================================================
-# C# unions and async validation in minimal APIs (.NET 11)
+# C# unions
 # =====================================================================
 
 ### Unions: return type — Dog case (STJ serializes the active case)
@@ -89,6 +89,10 @@ Content-Type: application/json
 { "name": "Fido" }
 
 ###
+
+# =====================================================================
+# async validation
+# =====================================================================
 
 ### Async validation: a registered email is rejected by the async [UniqueEmail] rule
 POST {{ApiFeatures_HostAddress}}/register
