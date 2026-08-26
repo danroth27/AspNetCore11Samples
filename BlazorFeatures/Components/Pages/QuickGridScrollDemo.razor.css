@@ -3,6 +3,13 @@
     overflow-y: auto;
 }
 
+.quickgrid-scroll ::deep thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--bs-body-bg);
+}
+
 .quickgrid-scroll ::deep tbody > tr:not([data-blazor-virtualize-reserved-height]) {
     height: 32px;
 }
