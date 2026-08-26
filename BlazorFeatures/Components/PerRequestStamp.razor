@@ -1,0 +1,11 @@
+@* [CacheBehavior(CacheBehavior.Rerender)] makes this component a "hole" in a cached
+   region: even when the surrounding CacheView replays captured HTML, this component
+   is re-instantiated and re-rendered for the current request. That's how
+   AntiforgeryToken stays valid inside cached output. *@
+
+@using Microsoft.AspNetCore.Components
+@attribute [CacheBehavior(CacheBehavior.Rerender)]
+
+<div class="alert alert-info py-2">
+    Re-render hole: this request is <strong>@DateTime.Now.ToString("HH:mm:ss.fff")</strong>
+</div>

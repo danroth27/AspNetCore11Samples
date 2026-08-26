@@ -1,0 +1,101 @@
+@page "/auto-pause"
+@rendermode InteractiveServer
+@inject CircuitTrackingHandler Tracker
+
+<PageTitle>Automatic circuit pause</PageTitle>
+
+<h1>Automatic circuit pause</h1>
+
+<p>
+    Preview 6 added <code>Circuit.RequestCircuitPauseAsync</code> so the <em>server</em> could
+    pause a circuit on demand. Preview 7 adds the matching client-driven path: the circuit
+    pauses itself after the browser tab has been hidden for a configurable delay, releasing the
+    SignalR connection and its server-side memory until the user comes back
+    (<a href="https://github.com/dotnet/aspnetcore/pull/67098">dotnet/aspnetcore #67098</a>,
+    <a href="https://github.com/dotnet/aspnetcore/pull/67045">#67045</a>).
+</p>
+
+<p>
+    The behavior ships in a separate opt-in package,
+    <code>Microsoft.AspNetCore.Components.Server.AutoPause</code>, and is configured on the
+    render mode's browser options. See <code>Program.cs</code>:
+</p>
+
+<pre><code>app.MapRazorComponents&lt;App&gt;()
+    .AddInteractiveServerRenderMode()
+    .WithBrowserOptions(options =&gt;
+    {
+        options.AddAutoPause(pause =&gt;
+        {
+            pause.Enabled = true;                          // default
+            pause.HiddenDelay = TimeSpan.FromSeconds(10);  // default is 2 minutes
+        });
+    });</code></pre>
+
+<h2>Try it</h2>
+
+<ol>
+    <li>Increment the counter and note the circuit and component instance IDs.</li>
+    <li>
+        Switch to another <em>browser tab</em> (or minimize the browser) and wait 10 seconds.
+        Merely focusing another window, including undocked dev tools, does not make the page
+        hidden and won't trigger auto-pause.
+    </li>
+    <li>
+        Come back. Both IDs change because a new circuit and component instance were created,
+        while the counter value survives because it is explicitly marked with
+        <code>[PersistentState]</code>.
+    </li>
+</ol>
+
+<p>
+    Logical circuit ID: <code>@(Tracker.CurrentCircuit?.Id ?? "(connecting)")</code>
+    <small class="text-muted">(changes after pause/resume)</small>
+</p>
+<p>
+    Component instance ID: <code>@_componentInstanceId</code>
+    <small class="text-muted">(also changes when the component is reconstructed)</small>
+</p>
+
+<div class="alert alert-info">
+    Preview 7 limitation: open or refresh this URL directly before testing. If the app initially loads
+    a non-interactive page and reaches this page through enhanced navigation, the AutoPause package's
+    startup callback isn't invoked and the circuit won't pause
+    (<a href="https://github.com/dotnet/aspnetcore/issues/68337">dotnet/aspnetcore #68337</a>).
+</div>
+
+<p>Persisted counter: <strong>@Count</strong></p>
+<button class="btn btn-primary" @onclick="() => Count++">Increment</button>
+
+<p class="mt-3">
+    Circuit pause does <strong>not</strong> serialize every private field in every component.
+    State that must survive rehydration is opted in explicitly. This counter is:
+</p>
+
+<pre><code>[PersistentState]
+public int Count { get; set; }</code></pre>
+
+<h2>Deferring a pause</h2>
+
+<p>
+    Auto-pause defers itself while a pause would lose data or interrupt work in progress. The
+    shipped checks are: a text input or <code>contenteditable</code> element whose value differs
+    from its default, an <code>&lt;audio&gt;</code>/<code>&lt;video&gt;</code> element that is
+    playing unmuted, an open Picture-in-Picture window, a held
+    <a href="https://developer.mozilla.org/docs/Web/API/Web_Locks_API">Web Lock</a>, and any
+    in-flight circuit activity (JS interop calls, stream transfers, queued renders).
+</p>
+
+<p>
+    Type something into the box below, then hide the tab: the pause is deferred for as long as
+    the field stays dirty. Clear it and the pause proceeds.
+</p>
+
+<input class="form-control mb-3" placeholder="Type here to block auto-pause" />
+
+@code {
+    private readonly string _componentInstanceId = Guid.NewGuid().ToString("N")[..8];
+
+    [PersistentState]
+    public int Count { get; set; }
+}

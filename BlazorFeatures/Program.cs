@@ -13,10 +13,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Required for [SupplyParameterFromTempData] in Blazor SSR (Preview 4 #65306).
-// TempData uses cookie-based storage by default; the controller services
-// register the ITempDataProvider that the new attribute reads from.
-builder.Services.AddControllers();
+// Preview 7: CacheView (#65772, #67776) caches rendered SSR output. It uses a bounded
+// in-memory store by default, but automatically upgrades to HybridCache when one is
+// registered in DI, giving a two-tier local/distributed cache with no other code change.
+// (RazorComponentsServiceOptions.CacheViewHybridCache can point at a specific instance.)
+builder.Services.AddHybridCache();
 
 // Register the CircuitHandler used by /circuit-pause to capture a
 // Circuit reference for Circuit.RequestCircuitPauseAsync (Preview 4 #66265).
@@ -25,12 +26,20 @@ builder.Services.AddScoped<CircuitHandler>(sp => sp.GetRequiredService<CircuitTr
 
 // Preview 5: validation infrastructure backing /client-validation and /async-validation.
 // AddValidation discovers [ValidatableType] models so DataAnnotationsValidator routes
-// through the new pipeline. AddValidationLocalization<T> (PR #66646) hooks an
-// IValidationLocalizer that resolves display names and error messages against the
-// IStringLocalizer<ValidationMessages> resx files in /Resources.
+// through the new pipeline.
+//
+// Preview 7 (PR #68005) streamlined validation localization: the separate
+// Microsoft.Extensions.Validation.Localization package and its
+// AddValidationLocalization<T>() / IValidationLocalizer API are gone. Localization now
+// turns on automatically as soon as an IStringLocalizerFactory is in DI (AddLocalization
+// below), and the resource lookup is emitted by the validation source generator.
+// By default keys resolve against each model's own resources; LocalizerProvider points
+// every model at the shared ValidationMessages.resx files in /Resources instead.
 builder.Services.AddLocalization();
-builder.Services.AddValidation();
-builder.Services.AddValidationLocalization<ValidationMessages>();
+builder.Services.AddValidation(options =>
+{
+    options.LocalizerProvider = (_, factory) => factory.Create(typeof(ValidationMessages));
+});
 builder.Services.AddSingleton<UserService>();
 
 // Preview 5: [SupplyParameterFromSession] (PR #65184) reads and writes ISession on
@@ -103,7 +112,16 @@ app.MapRazorComponents<App>()
 
         // Preserve the DOM across enhanced navigations.
         options.Ssr.PreserveDom = true;
+
+        // Preview 7 (#67098): pause the circuit automatically once the tab has been
+        // hidden for HiddenDelay, releasing the SignalR connection and server memory
+        // until the user returns. Ships in the Microsoft.AspNetCore.Components.Server.AutoPause
+        // package. 10s here so the behavior is easy to observe; the default is 2 minutes.
+        options.AddAutoPause(pause =>
+        {
+            pause.Enabled = true;
+            pause.HiddenDelay = TimeSpan.FromSeconds(10);
+        });
     });
 
 app.Run();
-

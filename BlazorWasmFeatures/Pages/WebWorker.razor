@@ -147,7 +147,9 @@
         usedWorker = false;
         processLocation = "Main Thread";
         result = null;
-        StateHasChanged();
+        // No StateHasChanged() needed: Blazor re-renders as soon as this handler
+        // yields. Task.Yield() is what lets that render reach the browser before
+        // the blocking work below starts.
         await Task.Yield();
 
         var sw = Stopwatch.StartNew();
@@ -166,7 +168,6 @@
         usedWorker = true;
         processLocation = "Web Worker";
         result = null;
-        StateHasChanged();
 
         var sw = Stopwatch.StartNew();
 

@@ -2,6 +2,11 @@ using Microsoft.JSInterop;
 
 namespace WebWorkerDemo;
 
+// BL0016 (guard JS interop with try/catch) is suppressed for this type on purpose.
+// This is a reusable wrapper, not component code: callers own the failure policy, so
+// these methods let JSException/JSDisconnectedException propagate instead of
+// swallowing them. DisposeAsync does catch, because disposal must not throw.
+#pragma warning disable BL0016
 public sealed class WebWorkerClient(IJSObjectReference worker) : IAsyncDisposable
 {
     private const int DefaultTimeoutMs = 60000;
@@ -46,3 +51,4 @@ public sealed class WebWorkerClient(IJSObjectReference worker) : IAsyncDisposabl
         await worker.DisposeAsync();
     }
 }
+#pragma warning restore BL0016

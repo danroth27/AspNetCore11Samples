@@ -1,5 +1,4 @@
 @page "/client-validation"
-@using BlazorFeatures.Models
 @using Microsoft.Extensions.Localization
 @inject IStringLocalizer<BlazorFeatures.Resources.ValidationMessages> L
 
@@ -15,12 +14,16 @@
     `<DataAnnotationsValidator />` to emit data-val-* attributes on every input,
     and PR #66420 ships the JS validator bundled inside blazor.web.js, so simply
     using <DataAnnotationsValidator /> gives instant client-side validation with
-    zero extra setup. EnableClientValidation is true by default; show it
-    explicitly here for the demo.
+    zero extra setup.
+
+    Preview 7 renamed the opt-out parameter and inverted it: Preview 6's
+    EnableClientValidation="true" is now DisableClientValidation, which defaults
+    to false. Client-side validation is on by default, so no parameter is needed
+    here; set DisableClientValidation="true" to fall back to server-only validation.
 *@
 <div class="form-card">
 <EditForm Model="contact" Enhance OnValidSubmit="HandleSubmit" FormName="ContactForm">
-    <DataAnnotationsValidator EnableClientValidation="true" />
+    <DataAnnotationsValidator />
 
     <fieldset disabled="@submitted">
         <div class="form-group">

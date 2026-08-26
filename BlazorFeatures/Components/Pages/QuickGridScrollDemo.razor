@@ -1,0 +1,58 @@
+@page "/quickgrid-scroll"
+@rendermode InteractiveServer
+
+<PageTitle>QuickGrid scroll-to-item</PageTitle>
+
+<h1>QuickGrid virtualization: <code>InitialItemIndex</code> and <code>ScrollToItemAsync</code></h1>
+
+<p>
+    Preview 6 added <code>InitialItemIndex</code> and <code>ScrollToItemAsync</code> to
+    <code>Virtualize</code>. Preview 7 forwards both to <code>QuickGrid</code>'s inner
+    <code>Virtualize</code> component, so a virtualized grid can open at a specific row and be
+    scrolled programmatically
+    (<a href="https://github.com/dotnet/aspnetcore/pull/67914">dotnet/aspnetcore #67914</a>).
+</p>
+
+<p>
+    This grid sets <code>InitialItemIndex="500"</code>, so it renders already scrolled to
+    product #500 instead of at the top. Both APIs require <code>Virtualize="true"</code>;
+    the fixed 32-pixel row height matches <code>ItemSize</code> so the virtualizer can
+    calculate accurate scroll positions.
+</p>
+
+<div class="alert alert-info">
+    Preview 7 limitation: if you reached this page through enhanced navigation, refresh the page
+    to trigger a full page load before verifying <code>InitialItemIndex</code>.
+</div>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="() => ScrollTo(0)">Back to top</button>
+    <button class="btn btn-secondary" @onclick="() => ScrollTo(500)">Back to #500</button>
+    <button class="btn btn-secondary" @onclick="() => ScrollTo(products.Count - 1)">Jump to end</button>
+</div>
+
+<div class="quickgrid-scroll" tabindex="-1">
+    <QuickGrid TGridItem="Product" Items="@products.AsQueryable()"
+               Virtualize="true"
+               ItemSize="32"
+               InitialItemIndex="500"
+               @ref="grid">
+        <PropertyColumn Property="@(p => p.Id)" Title="#" />
+        <PropertyColumn Property="@(p => p.Name)" />
+        <PropertyColumn Property="@(p => p.Price)" Format="C" />
+    </QuickGrid>
+</div>
+
+@code {
+    private QuickGrid<Product> grid = default!;
+
+    private static readonly List<Product> products =
+        Enumerable.Range(0, 5_000)
+            .Select(i => new Product(i, $"Product {i:D4}", 4.99m + (i % 250)))
+            .ToList();
+
+    // The last call wins if a scroll is already in flight.
+    private Task ScrollTo(int index) => grid.ScrollToItemAsync(index);
+
+    private record Product(int Id, string Name, decimal Price);
+}

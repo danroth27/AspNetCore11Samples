@@ -51,16 +51,32 @@ await JSRuntime.InvokeVoidAsync("console.log", "Hello");
 
     private async Task CallJSCorrectly()
     {
-        // ✅ Correct: Use InvokeVoidAsync for void JS functions
-        await JS.InvokeVoidAsync("console.log", "Hello from Blazor (correct way)");
-        result = "Called console.log using InvokeVoidAsync ✅";
+        // Use InvokeVoidAsync for JS functions that return nothing. The try/catch
+        // satisfies BL0016: an interactive circuit can disconnect mid-call.
+        try
+        {
+            await JS.InvokeVoidAsync("console.log", "Hello from Blazor (correct way)");
+            result = "Called console.log using InvokeVoidAsync ✅";
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit went away before the call completed; nothing to show.
+        }
     }
 
     private async Task CallJSIncorrectly()
     {
-        // ⚠️ This triggers BL0010 warning in the IDE
-        // The analyzer will suggest using InvokeVoidAsync instead
-        await JS.InvokeAsync<object>("console.log", "Hello from Blazor (triggers analyzer)");
-        result = "Called console.log using InvokeAsync<object> ⚠️ (check browser console)";
+        // Deliberately uses InvokeAsync<object> so BL0010 has something to flag.
+        // Suppressed here so the build stays clean; see the code comparison above.
+#pragma warning disable BL0010
+        try
+        {
+            await JS.InvokeAsync<object>("console.log", "Hello from Blazor (triggers analyzer)");
+            result = "Called console.log using InvokeAsync<object> ⚠️ (check browser console)";
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+#pragma warning restore BL0010
     }
 }

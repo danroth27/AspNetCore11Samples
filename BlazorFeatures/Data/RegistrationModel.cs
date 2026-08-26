@@ -13,6 +13,7 @@ namespace BlazorFeatures.Data;
 // its async path. Without them, Blazor falls back to synchronous validation and
 // the async attributes never run.
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Validation;
 
 [ValidatableType]
 public class RegistrationModel

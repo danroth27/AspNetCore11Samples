@@ -1,5 +1,4 @@
 @page "/unions-demo"
-@using SharedComponents
 @rendermode InteractiveServer
 
 <PageTitle>C# Unions in Blazor</PageTitle>
@@ -37,21 +36,23 @@
 </p>
 
 <div class="alert alert-warning" role="alert">
-    <strong>Preview 6 Razor limitations for union-typed parameters.</strong>
+    <strong>Razor support for union-typed parameters.</strong>
     <ul class="mb-0">
-        <li>The literal-attribute form <code>Message="Saved."</code> doesn't compile — use the
-            expression form <code>Message="@("Saved.")"</code>
+        <li><strong>Fixed in Preview 7.</strong> The literal-attribute form
+            <code>Message="Saved."</code> now compiles, so the string case reads like any other
+            component parameter. In Preview 6 it required the expression form
+            <code>Message="@("Saved.")"</code>
             (<a href="https://github.com/dotnet/razor/issues/13188" target="_blank">dotnet/razor#13188</a>).</li>
-        <li>Child-content markup (<code>&lt;Toast&gt;…&lt;/Toast&gt;</code>) doesn't populate the
-            <code>RenderFragment</code> case, so the rich example below builds its fragment in C# with
-            <code>RenderTreeBuilder</code> instead of natural Razor markup
+        <li><strong>Still open.</strong> Child-content markup (<code>&lt;Toast&gt;…&lt;/Toast&gt;</code>)
+            doesn't populate the <code>RenderFragment</code> case, so the rich example below builds its
+            fragment in C# with <code>RenderTreeBuilder</code> instead of natural Razor markup
             (<a href="https://github.com/dotnet/razor/issues/13200" target="_blank">dotnet/razor#13200</a>).</li>
     </ul>
 </div>
 
 <p>Two call shapes — same parameter, no precedence rules:</p>
 
-<Toast Message="@("Saved 3 items.")" Severity="ToastSeverity.Success" />
+<Toast Message="Saved 3 items." Severity="ToastSeverity.Success" />
 <Toast Message="@_richToast" Severity="ToastSeverity.Warning" />
 
 <p class="text-muted small mb-0">

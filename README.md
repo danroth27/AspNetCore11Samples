@@ -42,17 +42,18 @@ and features. Demos are grouped by the preview that introduced them.
   boxed-union parameter. Requires `<LangVersion>preview</LangVersion>` and
   `<EnablePreviewFeatures>true</EnablePreviewFeatures>`.
   The union deliberately omits a `MarkupString` (raw HTML) case to avoid an XSS footgun.
-  Current Razor limitations for union-typed parameters: the literal-attribute shortcut
-  (`Content="hello"`) doesn't compile — use the expression form `Content="@("hello")"`
-  ([dotnet/razor#13188](https://github.com/dotnet/razor/issues/13188)) — and child-content
-  markup doesn't populate a `RenderFragment` case
+  Preview 7 fixed the literal-attribute shortcut for union-typed parameters, so
+  `Content="hello"` now compiles ([dotnet/razor#13188](https://github.com/dotnet/razor/issues/13188)).
+  One Razor limitation remains: child-content markup doesn't populate a `RenderFragment` case
   ([dotnet/razor#13200](https://github.com/dotnet/razor/issues/13200)).
   See the design note: [aspnet/specs#782](https://github.com/aspnet/specs/pull/782).
   The `Toast` component and `ToastMessage` union live in the shared `SharedComponents`
   Razor Class Library (referenced by both the Server and WebAssembly apps).
-- **Virtualize scroll-to-item** (`/virtualize-scroll`) — `Virtualize<TItem>.InitialIndex`
-  opens a large list at a given item, and `ScrollToIndexAsync` scrolls to any item on demand
+- **Virtualize scroll-to-item** (`/virtualize-scroll`) — `Virtualize<TItem>.InitialItemIndex`
+  opens a large list at a given item, and `ScrollToItemAsync` scrolls to any item on demand
   ([dotnet/aspnetcore#66753](https://github.com/dotnet/aspnetcore/pull/66753)).
+  These shipped in Preview 6 as `InitialIndex` and `ScrollToIndexAsync`; Preview 7 renamed both
+  ([dotnet/aspnetcore#67914](https://github.com/dotnet/aspnetcore/pull/67914)).
 - **Configure client from server** (`/browser-options`) — `WithBrowserOptions` sets client-side
   startup behavior (log level, reconnection, DOM preservation) from the server in C# instead of
   hand-written `Blazor.start` JavaScript; the page reads the resolved options with
@@ -61,6 +62,34 @@ and features. Demos are grouped by the preview that introduced them.
   new cross-origin checks (`Sec-Fetch-Site`/`Origin`) with no antiforgery token and no
   `app.UseAntiforgery()` ([dotnet/aspnetcore#66585](https://github.com/dotnet/aspnetcore/pull/66585)).
   The separate `CsrfAttackerSite` project forges a cross-site POST against this form.
+**Preview 7**
+- **Cache SSR output with `CacheView`** (`/cache-view`) — caches the rendered HTML of a
+  statically rendered subtree with `ExpiresAfter` and vary-by dimensions. On a cache hit the
+  children are not instantiated at all. Also shows the `[CacheBehavior(CacheBehavior.Rerender)]`
+  "hole" that keeps updating inside a cached region, and the `[CacheCondition]` guard that forces
+  `QuickGrid` to be paired with `VaryByQuery`. `Program.cs` registers `AddHybridCache()`, which
+  `CacheView` picks up from DI automatically
+  ([dotnet/aspnetcore#65772](https://github.com/dotnet/aspnetcore/pull/65772),
+  [#67776](https://github.com/dotnet/aspnetcore/pull/67776)).
+- **QuickGrid scroll-to-item** (`/quickgrid-scroll`) — `QuickGrid` forwards
+  `InitialItemIndex` and `ScrollToItemAsync` to its inner `Virtualize`, so a virtualized grid can
+  open at a specific row and be scrolled programmatically. In the Preview 7 build, refresh the page
+  after enhanced navigation to trigger a full page load before verifying `InitialItemIndex`
+  ([dotnet/aspnetcore#67914](https://github.com/dotnet/aspnetcore/pull/67914)).
+- **Automatic circuit pause** (`/auto-pause`) — the circuit pauses itself after the tab
+  has been hidden for `HiddenDelay`, releasing the SignalR connection and server memory. Configured
+  with `options.AddAutoPause(...)` from the `Microsoft.AspNetCore.Components.Server.AutoPause`
+  package. Its counter uses `[PersistentState]` because ordinary component
+  fields are not automatically serialized across pause/resume. The circuit ID and a non-persisted
+  component-instance ID both change when the circuit is resumed and reconstructed, while the persisted
+  counter keeps its value, making pause/resume observable without app-level JavaScript. With the Preview 7
+  build, open or refresh `/auto-pause` directly before testing. Enhanced navigation from an initially
+  non-interactive page doesn't invoke the package's startup callback
+  ([dotnet/aspnetcore#68337](https://github.com/dotnet/aspnetcore/issues/68337)).
+  ([dotnet/aspnetcore#67098](https://github.com/dotnet/aspnetcore/pull/67098),
+  [#67045](https://github.com/dotnet/aspnetcore/pull/67045)).
+- **New Blazor analyzers** (`/analyzers`) — `AnalyzerDemo.razor` deliberately violates
+  `BL0012`–`BL0016`, so building the project reports all five new diagnostics.
 
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
@@ -109,6 +138,9 @@ Web API (minimal APIs) demonstrating framework features:
 - **Kestrel trailer header timeout** (Preview 5) — `RequestHeadersTimeout` applies to HTTP/2 and HTTP/3 trailer frames
 - **C# unions** (Preview 6) — union return types are described with `anyOf` in OpenAPI and serialized by their active case (`GET /pets/{id}`); a union body binds by JSON token type (`POST /pets/adopt`)
 - **Async validation** (Preview 6) — `AsyncValidationAttribute` (`POST /register`) and `IAsyncValidatableObject` (`POST /reservations`) run during minimal-API validation via `AddValidation()`
+- **TLS channel binding token access** (Preview 7, [dotnet/aspnetcore#67436](https://github.com/dotnet/aspnetcore/pull/67436), follow-up [#67720](https://github.com/dotnet/aspnetcore/pull/67720)) — `GET /channel-binding` reads the RFC 5929 `tls-server-end-point` token from `ITlsConnectionFeature.TryGetChannelBindingBytes(ChannelBindingKind.Endpoint, out ...)`. Channel binding ties an authentication exchange to the specific TLS channel, defeating auth-relay / MITM attacks that replay credentials onto another connection. Kestrel implements it over `SslStream.TransportContext.GetChannelBinding`, so it works on any HTTPS connection — **run with the `https` profile** (`dotnet run --project ApiFeatures --launch-profile https`) and call `https://localhost:7123/channel-binding`. The endpoint returns a SHA-256 fingerprint of the token (the token derives from the public server certificate, so it isn't secret) rather than the raw bytes. On HTTP.sys the new `HttpSysOptions.HttpAuthenticationHardeningLevel` (Legacy/Medium/Strict, default Medium) additionally lets the OS enforce channel binding on Windows auth, and Strict fails startup if that hardening can't be applied (#67720).
+- **Server-sent events in OpenAPI** (Preview 7, [dotnet/aspnetcore#67461](https://github.com/dotnet/aspnetcore/pull/67461)) — `GET /todos/stream`, `/todos/stream-simple`, and `/ticks/stream` return `TypedResults.ServerSentEvents(...)`, and the generated document describes them with OpenAPI 3.2 `itemSchema` under `text/event-stream`. `ServerSentEvents.cs` documents the two overload pitfalls: returning a bare `IAsyncEnumerable<SseItem<T>>` from the lambda produces `application/json` instead of SSE, and passing `eventType:` alongside `SseItem<T>` values binds the wrong overload and double-wraps the payload.
+- **Security hardening** (Preview 7) — `SecurityHardening.cs` exercises four Preview 7 changes as raw HTTP behavior: Rewrite middleware collapsing leading `/` and `\` runs so a rule can't emit a scheme-relative open redirect (`/open-redirect-slashes`, [#66961](https://github.com/dotnet/aspnetcore/pull/66961), [#67928](https://github.com/dotnet/aspnetcore/pull/67928)); `PathString.StartsWithSegments` treating `\` as a segment boundary so `/segment-guard%5Cbar` no longer bypasses a `Map` branch ([#67093](https://github.com/dotnet/aspnetcore/pull/67093)); Kestrel rejecting `Content-Length: +5` ([#67635](https://github.com/dotnet/aspnetcore/pull/67635)); and the default CSRF middleware validating only endpoints with antiforgery metadata, so `POST /csrf/plain` passes cross-origin while `POST /csrf/form` is still rejected ([#67460](https://github.com/dotnet/aspnetcore/pull/67460), [#67839](https://github.com/dotnet/aspnetcore/pull/67839)).
 
 
 ### SignalRFeatures and SignalRClient
@@ -141,7 +173,7 @@ See [Automatic CSRF protection demo](#automatic-csrf-protection-demo) for how to
 
 ## Running the Samples
 
-Requires the .NET 11 Preview 6 SDK (`11.0.100-preview.6.26359.118`) or later.
+Requires the .NET 11 Preview 7 SDK (`11.0.100-preview.7.26381.103`) or later.
 
 ```pwsh
 dotnet build
@@ -217,4 +249,9 @@ and the gateway proxies it to `BackendApi` via YARP. The proxy route/cluster (an
 address) are configured with `ReverseProxy__*` environment variables in
 `BlazorWasmFeatures/Properties/launchSettings.json`.
 
-All packages are published on nuget.org, so no extra NuGet feeds are required.
+Several Preview 7 packages are not on nuget.org yet, so `NuGet.config` adds the
+[dotnet11 daily-build feed](https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json).
+`Microsoft.AspNetCore.Components.QuickGrid`,
+`Microsoft.AspNetCore.Components.Server.AutoPause`, and
+`Microsoft.AspNetCore.Components.Gateway` all come from that feed at
+`11.0.0-preview.7.26381.103`.
