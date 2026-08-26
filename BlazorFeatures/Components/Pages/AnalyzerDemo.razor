@@ -29,10 +29,10 @@
 
 <p>Clicked: <strong>@clicks</strong></p>
 
-@* BL0014: `i` is captured by the lambda, so every button reports the final value. *@
-@for (var i = 0; i < 3; i++)
+@* BL0014: `capturedLoopIndex` is captured by the lambda, so every button reports the final value. *@
+@for (var capturedLoopIndex = 0; capturedLoopIndex < 3; capturedLoopIndex++)
 {
-    <button class="btn btn-outline-primary me-1" @onclick="() => clicks = i">Set to @i</button>
+    <button class="btn btn-outline-primary me-1" @onclick="() => clicks = capturedLoopIndex">Set to @capturedLoopIndex</button>
 }
 
 <button class="btn btn-primary mt-2" @onclick="RunInteropAsync">Run JS interop</button>
