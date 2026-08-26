@@ -73,7 +73,8 @@ and features. Demos are grouped by the preview that introduced them.
   [#67776](https://github.com/dotnet/aspnetcore/pull/67776)).
 - **QuickGrid scroll-to-item** (`/quickgrid-scroll`) — `QuickGrid` forwards
   `InitialItemIndex` and `ScrollToItemAsync` to its inner `Virtualize`, so a virtualized grid can
-  open at a specific row and be scrolled programmatically
+  open at a specific row and be scrolled programmatically. In the Preview 7 build, refresh the page
+  after enhanced navigation to trigger a full page load before verifying `InitialItemIndex`
   ([dotnet/aspnetcore#67914](https://github.com/dotnet/aspnetcore/pull/67914)).
 - **Automatic circuit pause** (`/auto-pause`) — the circuit pauses itself after the tab
   has been hidden for `HiddenDelay`, releasing the SignalR connection and server memory. Configured

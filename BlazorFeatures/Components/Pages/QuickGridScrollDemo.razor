@@ -20,6 +20,11 @@
     calculate accurate scroll positions.
 </p>
 
+<div class="alert alert-info">
+    Preview 7 limitation: if you reached this page through enhanced navigation, refresh the page
+    to trigger a full page load before verifying <code>InitialItemIndex</code>.
+</div>
+
 <div class="mb-3">
     <button class="btn btn-primary" @onclick="() => ScrollTo(0)">Back to top</button>
     <button class="btn btn-secondary" @onclick="() => ScrollTo(500)">Back to #500</button>
