@@ -57,7 +57,7 @@ and features. Demos are grouped by the preview that introduced them.
 - **Configure client from server** (`/browser-options`) — `WithBrowserOptions` sets client-side
   startup behavior (log level, reconnection, DOM preservation) from the server in C# instead of
   hand-written `Blazor.start` JavaScript; the page reads the resolved options with
-  `HttpContext.GetBrowserOptions()` ([dotnet/aspnetcore#67337](https://github.com/dotnet/aspnetcore/pull/67337)).
+  `BrowserOptions.GetBrowserOptions(HttpContext)` ([dotnet/aspnetcore#67337](https://github.com/dotnet/aspnetcore/pull/67337)).
 - **Automatic CSRF protection** (`/csrf-protection`) — an SSR form protected automatically by the
   new cross-origin checks (`Sec-Fetch-Site`/`Origin`) with no antiforgery token and no
   `app.UseAntiforgery()` ([dotnet/aspnetcore#66585](https://github.com/dotnet/aspnetcore/pull/66585)).
@@ -90,6 +90,16 @@ and features. Demos are grouped by the preview that introduced them.
   [#67045](https://github.com/dotnet/aspnetcore/pull/67045)).
 - **New Blazor analyzers** (`/analyzers`) — `AnalyzerDemo.razor` deliberately violates
   `BL0012`–`BL0016`, so building the project reports all five new diagnostics.
+
+**RC1**
+- **Validation localization conventions** (`/async-validation`) — built-in DataAnnotations
+  no longer need an explicit resource key in every `ErrorMessage`. The sample uses global
+  convention keys such as `RequiredAttribute_Error`; RC1 also supports type- and member-specific
+  keys ([dotnet/aspnetcore#68202](https://github.com/dotnet/aspnetcore/pull/68202)).
+- **Final browser-options API names** (`/browser-options`) — the Preview 6 sample now uses
+  `InteractiveServer`, `StaticServer`, and `BrowserOptions.GetBrowserOptions(HttpContext)`, matching
+  the API shape finalized for RC1
+  ([dotnet/aspnetcore#67918](https://github.com/dotnet/aspnetcore/pull/67918)).
 
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
@@ -141,12 +151,13 @@ Web API (minimal APIs) demonstrating framework features:
 - **TLS channel binding token access** (Preview 7, [dotnet/aspnetcore#67436](https://github.com/dotnet/aspnetcore/pull/67436), follow-up [#67720](https://github.com/dotnet/aspnetcore/pull/67720)) — `GET /channel-binding` reads the RFC 5929 `tls-server-end-point` token from `ITlsConnectionFeature.TryGetChannelBindingBytes(ChannelBindingKind.Endpoint, out ...)`. Channel binding ties an authentication exchange to the specific TLS channel, defeating auth-relay / MITM attacks that replay credentials onto another connection. Kestrel implements it over `SslStream.TransportContext.GetChannelBinding`, so it works on any HTTPS connection — **run with the `https` profile** (`dotnet run --project ApiFeatures --launch-profile https`) and call `https://localhost:7123/channel-binding`. The endpoint returns a SHA-256 fingerprint of the token (the token derives from the public server certificate, so it isn't secret) rather than the raw bytes. On HTTP.sys the new `HttpSysOptions.HttpAuthenticationHardeningLevel` (Legacy/Medium/Strict, default Medium) additionally lets the OS enforce channel binding on Windows auth, and Strict fails startup if that hardening can't be applied (#67720).
 - **Server-sent events in OpenAPI** (Preview 7, [dotnet/aspnetcore#67461](https://github.com/dotnet/aspnetcore/pull/67461)) — `GET /todos/stream`, `/todos/stream-simple`, and `/ticks/stream` return `TypedResults.ServerSentEvents(...)`, and the generated document describes them with OpenAPI 3.2 `itemSchema` under `text/event-stream`. `ServerSentEvents.cs` documents the two overload pitfalls: returning a bare `IAsyncEnumerable<SseItem<T>>` from the lambda produces `application/json` instead of SSE, and passing `eventType:` alongside `SseItem<T>` values binds the wrong overload and double-wraps the payload.
 - **Security hardening** (Preview 7) — `SecurityHardening.cs` exercises four Preview 7 changes as raw HTTP behavior: Rewrite middleware collapsing leading `/` and `\` runs so a rule can't emit a scheme-relative open redirect (`/open-redirect-slashes`, [#66961](https://github.com/dotnet/aspnetcore/pull/66961), [#67928](https://github.com/dotnet/aspnetcore/pull/67928)); `PathString.StartsWithSegments` treating `\` as a segment boundary so `/segment-guard%5Cbar` no longer bypasses a `Map` branch ([#67093](https://github.com/dotnet/aspnetcore/pull/67093)); Kestrel rejecting `Content-Length: +5` ([#67635](https://github.com/dotnet/aspnetcore/pull/67635)); and the default CSRF middleware validating only endpoints with antiforgery metadata, so `POST /csrf/plain` passes cross-origin while `POST /csrf/form` is still rejected ([#67460](https://github.com/dotnet/aspnetcore/pull/67460), [#67839](https://github.com/dotnet/aspnetcore/pull/67839)).
-
+- **Automatic OpenAPI deprecation metadata** (RC1, [dotnet/aspnetcore#66355](https://github.com/dotnet/aspnetcore/pull/66355)) — `[Obsolete]` on an endpoint handler, schema type, or schema property now emits `deprecated: true`. `OpenApiDeprecation.cs` contrasts `/catalog/{id}` with `/catalog/legacy/{id}` and demonstrates all three mappings.
 
 ### SignalRFeatures and SignalRClient
 SignalR authentication-refresh demo for .NET 11 Preview 6:
 
 - **Authentication refresh** (Preview 6, [dotnet/aspnetcore#67400](https://github.com/dotnet/aspnetcore/pull/67400)) — the server enables `EnableAuthenticationRefresh` on `/clock`, and the .NET client refreshes its bearer token without dropping the hub connection. Tokens last 45 seconds so an automatic refresh is visible during a short run.
+- **RC1 API shape** ([dotnet/aspnetcore#68676](https://github.com/dotnet/aspnetcore/pull/68676)) — refresh-success and refresh-failure callbacks are now `HubConnection.AuthenticationRefreshed` and `AuthenticationRefreshFailed` events. The server policy returns `Task<bool>`, and the sample uses the finalized APIs.
 - `SignalRFeatures` hosts the JWT bearer-secured `/clock` hub, the `/token?user=alice` issuer, and `/promote?user=alice` on `https://localhost:7110`. The client also calls `/reset?user=alice` at startup, so the demo can be re-run repeatedly against one server process.
 - `SignalRClient` streams clock ticks for 50 seconds and prints auth-refresh callbacks plus a success summary. Eight seconds in it promotes `alice` to `admin` and calls `RefreshAuthenticationAsync()`, so the new role shows up on the next tick over the same connection.
 
@@ -173,15 +184,21 @@ See [Automatic CSRF protection demo](#automatic-csrf-protection-demo) for how to
 
 ## Running the Samples
 
-Requires the .NET 11 Preview 7 SDK (`11.0.100-preview.7.26381.103`) or later.
+Requires the .NET 11 RC1 SDK (`11.0.100-rc.1.26425.128`) used to validate these samples.
 
 ```pwsh
-dotnet build
+dotnet build ApiFeatures/ApiFeatures.csproj
+dotnet build BlazorFeatures.E2E.Tests/BlazorFeatures.E2E.Tests.csproj
+dotnet build SignalRFeatures/SignalRFeatures.csproj
+dotnet build SignalRClient/SignalRClient.csproj
 
 # Run a project, e.g. the Blazor Web App:
 dotnet run --project BlazorFeatures
 ```
 
+The full solution also contains a browser-WASM project. The installed RC1 SDK build requests
+`Microsoft.NETCore.App.Runtime.Mono.browser-wasm` version `11.0.0-rc.1.26425.128`, which isn't
+available on the configured feed; build the targeted server projects above with this SDK.
 
 ### Automatic CSRF protection demo
 
@@ -249,9 +266,10 @@ and the gateway proxies it to `BackendApi` via YARP. The proxy route/cluster (an
 address) are configured with `ReverseProxy__*` environment variables in
 `BlazorWasmFeatures/Properties/launchSettings.json`.
 
-Several Preview 7 packages are not on nuget.org yet, so `NuGet.config` adds the
+Several prerelease packages are not on nuget.org yet, so `NuGet.config` adds the
 [dotnet11 daily-build feed](https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json).
-`Microsoft.AspNetCore.Components.QuickGrid`,
-`Microsoft.AspNetCore.Components.Server.AutoPause`, and
-`Microsoft.AspNetCore.Components.Gateway` all come from that feed at
-`11.0.0-preview.7.26381.103`.
+`Microsoft.AspNetCore.Components.QuickGrid` and
+`Microsoft.AspNetCore.Components.Gateway` come from that feed at
+`11.0.0-preview.7.26381.103`. The RC1 OpenAPI, AutoPause, authentication, and SignalR client
+packages use `11.0.0-rc.1.26422.109`, the newest compatible package build available from
+that feed before the installed RC1 shared-framework build.

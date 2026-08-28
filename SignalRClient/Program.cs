@@ -39,24 +39,26 @@ await using var connection = new HubConnectionBuilder()
         // 5 minutes; the demo issues 45 second tokens, so dial it down to keep the demo short.
         o.EnableAutoRefresh = options.AutoRefresh;
         o.RefreshBeforeExpiration = TimeSpan.FromSeconds(10);
-
-        o.OnAuthenticationRefreshed = context =>
-        {
-            refreshes++;
-            Console.WriteLine($"*** AUTH REFRESHED #{refreshes} at {DateTimeOffset.Now:HH:mm:ss}; new lifetime {context.NewTokenLifetime} ***");
-
-            return Task.CompletedTask;
-        };
-
-        o.OnAuthenticationRefreshFailed = context =>
-        {
-            refreshFailures++;
-            Console.WriteLine($"*** AUTH REFRESH FAILED at {DateTimeOffset.Now:HH:mm:ss}: {context.Exception?.Message ?? "unknown error"} ***");
-
-            return Task.CompletedTask;
-        };
     })
     .Build();
+
+// RC1 moved refresh notifications from AuthenticationRefreshOptions to HubConnection
+// events, matching the existing Closed/Reconnecting/Reconnected event pattern.
+connection.AuthenticationRefreshed += context =>
+{
+    refreshes++;
+    Console.WriteLine($"*** AUTH REFRESHED #{refreshes} at {context.RefreshedAt:HH:mm:ss}; new lifetime {context.NewTokenLifetime} ***");
+
+    return Task.CompletedTask;
+};
+
+connection.AuthenticationRefreshFailed += context =>
+{
+    refreshFailures++;
+    Console.WriteLine($"*** AUTH REFRESH FAILED at {DateTimeOffset.Now:HH:mm:ss}: {context.Exception.Message} ***");
+
+    return Task.CompletedTask;
+};
 
 connection.Closed += error =>
 {

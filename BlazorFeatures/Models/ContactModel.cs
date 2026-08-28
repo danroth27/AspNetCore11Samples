@@ -15,18 +15,18 @@ namespace BlazorFeatures.Models;
 [ValidatableType]
 public class ContactModel
 {
-    [Required(ErrorMessage = nameof(Resources.ValidationMessages.RequiredError))]
-    [StringLength(100, MinimumLength = 2, ErrorMessage = nameof(Resources.ValidationMessages.StringLengthError))]
+    [Required]
+    [StringLength(100, MinimumLength = 2)]
     [Display(Name = nameof(Resources.ValidationMessages.ContactName))]
     public string? Name { get; set; }
 
-    [Required(ErrorMessage = nameof(Resources.ValidationMessages.RequiredError))]
-    [EmailAddress(ErrorMessage = nameof(Resources.ValidationMessages.EmailError))]
+    [Required]
+    [EmailAddress]
     [Display(Name = nameof(Resources.ValidationMessages.ContactEmail))]
     public string? Email { get; set; }
 
-    [Required(ErrorMessage = nameof(Resources.ValidationMessages.RequiredError))]
-    [StringLength(500, MinimumLength = 10, ErrorMessage = nameof(Resources.ValidationMessages.StringLengthError))]
+    [Required]
+    [StringLength(500, MinimumLength = 10)]
     [Display(Name = nameof(Resources.ValidationMessages.ContactMessage))]
     public string? Message { get; set; }
 }

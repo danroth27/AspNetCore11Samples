@@ -57,11 +57,11 @@
   <data name="Email" xml:space="preserve"><value>Correo electrónico</value></data>
   <data name="Age" xml:space="preserve"><value>Edad</value></data>
   <data name="Website" xml:space="preserve"><value>Sitio web</value></data>
-  <data name="RequiredError" xml:space="preserve"><value>{0} es obligatorio.</value></data>
-  <data name="StringLengthError" xml:space="preserve"><value>{0} debe tener entre {2} y {1} caracteres.</value></data>
-  <data name="EmailError" xml:space="preserve"><value>{0} no es una dirección de correo electrónico válida.</value></data>
-  <data name="RangeError" xml:space="preserve"><value>El campo {0} debe estar entre {1} y {2}.</value></data>
-  <data name="UrlError" xml:space="preserve"><value>{0} no es una URL válida.</value></data>
+  <data name="RequiredAttribute_Error" xml:space="preserve"><value>{0} es obligatorio.</value></data>
+  <data name="StringLengthAttribute_Error" xml:space="preserve"><value>{0} debe tener entre {2} y {1} caracteres.</value></data>
+  <data name="EmailAddressAttribute_Error" xml:space="preserve"><value>{0} no es una dirección de correo electrónico válida.</value></data>
+  <data name="RangeAttribute_Error" xml:space="preserve"><value>El campo {0} debe estar entre {1} y {2}.</value></data>
+  <data name="UrlAttribute_Error" xml:space="preserve"><value>{0} no es una URL válida.</value></data>
   <data name="UniqueEmailError" xml:space="preserve"><value>Este correo ya está registrado.</value></data>
   <data name="UniqueUsernameError" xml:space="preserve"><value>Este nombre de usuario ya está en uso.</value></data>
   <data name="ContactTitle" xml:space="preserve"><value>Contáctenos</value></data>

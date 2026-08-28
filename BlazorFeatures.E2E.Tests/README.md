@@ -23,6 +23,7 @@ The library combines:
 | `HomePageTests.HomePage_HasHelloWorldHeading` | Static SSR — verifies the landing page title and `<h1>` content. |
 | `WeatherPageTests.WeatherPage_StreamRendersForecastTable` | `[StreamRendering]` — verifies the streamed forecast table appears with five rows. Playwright's auto-wait removes the need for explicit polling. |
 | `LabelInteractiveTests.LabelInteractiveDemo_GeneratesMatchingIdAndForAttributes` | Interactive Server — uses `WaitForInteractiveAsync` to wait for the SignalR circuit before asserting that every `<input>` has an `id` matching its `<label for="…">`. |
+| `ValidationLocalizationTests.AsyncValidationDemo_UsesConventionalResourceKeys` | RC1 validation localization — verifies that DataAnnotations messages resolve through conventional resource keys without explicit `ErrorMessage` values. |
 
 ## Running
 

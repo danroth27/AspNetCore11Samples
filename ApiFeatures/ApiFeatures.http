@@ -9,6 +9,28 @@ Accept: application/json
 ###
 #endif
 
+# =====================================================================
+# OpenAPI deprecation metadata (.NET 11 RC1, #66355)
+# =====================================================================
+
+### The document marks /catalog/legacy/{id}, LegacyCatalogItem, and its sku property deprecated
+GET {{ApiFeatures_HostAddress}}/openapi/v1.json
+Accept: application/json
+
+###
+
+### Current catalog endpoint
+GET {{ApiFeatures_HostAddress}}/catalog/42
+Accept: application/json
+
+###
+
+### Legacy endpoint (still callable, but deprecated in OpenAPI)
+GET {{ApiFeatures_HostAddress}}/catalog/legacy/42
+Accept: application/json
+
+###
+
 ### Weather forecast
 GET {{ApiFeatures_HostAddress}}/weatherforecast/
 Accept: application/json
@@ -143,4 +165,3 @@ GET {{ApiFeatures_HostAddress}}/channel-binding
 Accept: application/json
 
 ###
-

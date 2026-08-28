@@ -283,6 +283,7 @@ app.MapGet("/todos", () => TypedResults.Ok<Todo[]>(new[]
 // Endpoints demonstrating C# unions and async validation in minimal APIs.
 app.MapUnions();          // C# unions in minimal APIs (anyOf in OpenAPI)
 app.MapAsyncValidation(); // Async validation for minimal APIs
+app.MapOpenApiDeprecation(); // RC1: [Obsolete] maps to deprecated: true in OpenAPI
 app.MapChannelBinding();  // Preview 7: TLS channel binding token access (#67436)
 app.MapServerSentEvents(); // Preview 7: SSE described with OpenAPI 3.2 itemSchema (#67461)
 app.MapSecurityHardening(); // Preview 7: rewrite, PathString, Content-Length, and CSRF hardening
@@ -324,5 +325,3 @@ class JsonWrapper
 }
 
 record SearchRequest(string? Query, string[]? Categories, double? MaxPrice);
-
-

@@ -19,9 +19,8 @@ namespace BlazorFeatures.Data;
 
 public sealed class UniqueUsernameAttribute : AsyncValidationAttribute
 {
-    // ErrorMessage doubles as the resource key: AddValidationLocalization<T>() looks it
-    // up in ValidationMessages.resx (and its culture-specific siblings), falling back to
-    // the ValidationResult message below when no resource matches.
+    // ErrorMessage doubles as the resource key. The LocalizerProvider configured in Program.cs
+    // resolves it from ValidationMessages.resx and falls back to the ValidationResult message.
     public UniqueUsernameAttribute()
         => ErrorMessage = nameof(ValidationMessages.UniqueUsernameError);
 

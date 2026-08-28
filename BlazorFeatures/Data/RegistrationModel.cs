@@ -18,24 +18,24 @@ using Microsoft.Extensions.Validation;
 [ValidatableType]
 public class RegistrationModel
 {
-    [Required(ErrorMessage = nameof(Resources.ValidationMessages.RequiredError))]
-    [StringLength(20, MinimumLength = 4, ErrorMessage = nameof(Resources.ValidationMessages.StringLengthError))]
+    [Required]
+    [StringLength(20, MinimumLength = 4)]
     [UniqueUsername]
     [Display(Name = nameof(Resources.ValidationMessages.Username))]
     public string Username { get; set; } = "";
 
-    [Required(ErrorMessage = nameof(Resources.ValidationMessages.RequiredError))]
-    [EmailAddress(ErrorMessage = nameof(Resources.ValidationMessages.EmailError))]
+    [Required]
+    [EmailAddress]
     [UniqueEmail]
     [Display(Name = nameof(Resources.ValidationMessages.Email))]
     public string Email { get; set; } = "";
 
-    [Required(ErrorMessage = nameof(Resources.ValidationMessages.RequiredError))]
-    [Range(13, 120, ErrorMessage = nameof(Resources.ValidationMessages.RangeError))]
+    [Required]
+    [Range(13, 120)]
     [Display(Name = nameof(Resources.ValidationMessages.Age))]
     public int? Age { get; set; }
 
-    [Url(ErrorMessage = nameof(Resources.ValidationMessages.UrlError))]
+    [Url]
     [Display(Name = nameof(Resources.ValidationMessages.Website))]
     public string? Website { get; set; }
 }

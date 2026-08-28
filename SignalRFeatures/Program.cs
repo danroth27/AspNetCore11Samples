@@ -87,13 +87,13 @@ app.MapHub<ClockHub>("/clock", options =>
             logger.LogWarning("Rejected authentication refresh for {ConnectionId}: subject changed from {PreviousUser} to {NewUser}.",
                 context.ConnectionId, previousSubject ?? "<none>", newSubject ?? "<none>");
 
-            return ValueTask.FromResult(false);
+            return Task.FromResult(false);
         }
 
         logger.LogInformation("Accepted authentication refresh for {ConnectionId} as {User}; new expiration {NewExpiration:O}.",
             context.ConnectionId, newSubject, context.NewExpiration);
 
-        return ValueTask.FromResult(true);
+        return Task.FromResult(true);
     };
 });
 

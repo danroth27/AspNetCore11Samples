@@ -107,11 +107,11 @@ app.MapRazorComponents<App>()
 
         // Interactive Server reconnection behavior (observe by stopping/restarting
         // the server and watching the reconnection UI).
-        options.Server.ReconnectionMaxRetries = 10;
-        options.Server.ReconnectionRetryInterval = TimeSpan.FromSeconds(1.5);
+        options.InteractiveServer.ReconnectionMaxRetries = 10;
+        options.InteractiveServer.ReconnectionRetryInterval = TimeSpan.FromSeconds(1.5);
 
         // Preserve the DOM across enhanced navigations.
-        options.Ssr.PreserveDom = true;
+        options.StaticServer.PreserveDom = true;
 
         // Preview 7 (#67098): pause the circuit automatically once the tab has been
         // hidden for HiddenDelay, releasing the SignalR connection and server memory

@@ -57,11 +57,11 @@
   <data name="Email" xml:space="preserve"><value>Email</value></data>
   <data name="Age" xml:space="preserve"><value>Age</value></data>
   <data name="Website" xml:space="preserve"><value>Website</value></data>
-  <data name="RequiredError" xml:space="preserve"><value>{0} is required.</value></data>
-  <data name="StringLengthError" xml:space="preserve"><value>{0} must be between {2} and {1} characters.</value></data>
-  <data name="EmailError" xml:space="preserve"><value>{0} is not a valid email address.</value></data>
-  <data name="RangeError" xml:space="preserve"><value>{0} must be between {1} and {2}.</value></data>
-  <data name="UrlError" xml:space="preserve"><value>{0} is not a valid URL.</value></data>
+  <data name="RequiredAttribute_Error" xml:space="preserve"><value>{0} is required.</value></data>
+  <data name="StringLengthAttribute_Error" xml:space="preserve"><value>{0} must be between {2} and {1} characters.</value></data>
+  <data name="EmailAddressAttribute_Error" xml:space="preserve"><value>{0} is not a valid email address.</value></data>
+  <data name="RangeAttribute_Error" xml:space="preserve"><value>{0} must be between {1} and {2}.</value></data>
+  <data name="UrlAttribute_Error" xml:space="preserve"><value>{0} is not a valid URL.</value></data>
   <data name="UniqueEmailError" xml:space="preserve"><value>This email is already registered.</value></data>
   <data name="UniqueUsernameError" xml:space="preserve"><value>This username is already taken.</value></data>
   <data name="ContactTitle" xml:space="preserve"><value>Contact Us</value></data>

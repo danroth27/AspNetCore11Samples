@@ -18,20 +18,20 @@
     .WithBrowserOptions(options =&gt;
     {
         options.LogLevel = LogLevel.Information;
-        options.Server.ReconnectionMaxRetries = 10;
-        options.Server.ReconnectionRetryInterval = TimeSpan.FromSeconds(1.5);
-        options.Ssr.PreserveDom = true;
+        options.InteractiveServer.ReconnectionMaxRetries = 10;
+        options.InteractiveServer.ReconnectionRetryInterval = TimeSpan.FromSeconds(1.5);
+        options.StaticServer.PreserveDom = true;
     });</code></pre>
 
 @if (resolved is not null)
 {
     <h2>Resolved options for this request</h2>
-    <p class="text-muted">Read on the server with <code>HttpContext.GetBrowserOptions()</code>.</p>
+    <p class="text-muted">Read on the server with <code>BrowserOptions.GetBrowserOptions(HttpContext)</code>.</p>
     <ul>
         <li><strong>LogLevel:</strong> @resolved.LogLevel</li>
-        <li><strong>Server.ReconnectionMaxRetries:</strong> @resolved.Server.ReconnectionMaxRetries</li>
-        <li><strong>Server.ReconnectionRetryInterval:</strong> @resolved.Server.ReconnectionRetryInterval</li>
-        <li><strong>Ssr.PreserveDom:</strong> @resolved.Ssr.PreserveDom</li>
+        <li><strong>InteractiveServer.ReconnectionMaxRetries:</strong> @resolved.InteractiveServer.ReconnectionMaxRetries</li>
+        <li><strong>InteractiveServer.ReconnectionRetryInterval:</strong> @resolved.InteractiveServer.ReconnectionRetryInterval</li>
+        <li><strong>StaticServer.PreserveDom:</strong> @resolved.StaticServer.PreserveDom</li>
     </ul>
 }
 
@@ -49,5 +49,6 @@
 
     BrowserOptions? resolved;
 
-    protected override void OnInitialized() => resolved = HttpContext?.GetBrowserOptions();
+    protected override void OnInitialized() =>
+        resolved = HttpContext is null ? null : BrowserOptions.GetBrowserOptions(HttpContext);
 }

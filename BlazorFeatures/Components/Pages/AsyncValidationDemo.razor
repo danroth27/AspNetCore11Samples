@@ -11,6 +11,13 @@
 
 <CultureSwitcher />
 
+<div class="alert alert-info">
+    <strong>RC1 localization convention:</strong> the built-in validation attributes on
+    <code>RegistrationModel</code> don't set <code>ErrorMessage</code>. The validator now
+    finds resources by convention, such as <code>RequiredAttribute_Error</code> and
+    <code>RegistrationModel_Username_StringLengthAttribute_Error</code>.
+</div>
+
 @*
     Async validation with plain DataAnnotations (.NET 11).
 
