@@ -184,7 +184,8 @@ See [Automatic CSRF protection demo](#automatic-csrf-protection-demo) for how to
 
 ## Running the Samples
 
-Requires the .NET 11 RC1 SDK (`11.0.100-rc.1.26425.128`) used to validate these samples.
+Requires the .NET 11 RC1 SDK (`11.0.100-rc.1.26425.128`) pinned by `global.json` and used to
+validate these samples.
 
 ```pwsh
 dotnet build ApiFeatures/ApiFeatures.csproj
@@ -266,10 +267,9 @@ and the gateway proxies it to `BackendApi` via YARP. The proxy route/cluster (an
 address) are configured with `ReverseProxy__*` environment variables in
 `BlazorWasmFeatures/Properties/launchSettings.json`.
 
-Several prerelease packages are not on nuget.org yet, so `NuGet.config` adds the
-[dotnet11 daily-build feed](https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json).
-`Microsoft.AspNetCore.Components.QuickGrid` and
-`Microsoft.AspNetCore.Components.Gateway` come from that feed at
-`11.0.0-preview.7.26381.103`. The RC1 OpenAPI, AutoPause, authentication, and SignalR client
-packages use `11.0.0-rc.1.26422.109`, the newest compatible package build available from
-that feed before the installed RC1 shared-framework build.
+`NuGet.config` keeps the
+[public .NET 11 feed](https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json)
+available for prerelease packages that haven't shipped to NuGet.org. ASP.NET Core package references
+use the RC1 build `11.0.0-rc.1.26425.128`. The experimental
+`Microsoft.AspNetCore.Components.Testing` package remains on the known-working Preview 7 build
+`11.0.0-preview.7.26381.103`.
