@@ -2,32 +2,26 @@ using BlazorFeatures.Components;
 using BlazorFeatures.E2E.Tests.Fixtures;
 using Microsoft.AspNetCore.Components.Testing.Infrastructure;
 using Microsoft.Playwright;
-using Microsoft.Playwright.Xunit.v3;
-using Xunit;
+using Microsoft.AspNetCore.Components.Testing.Playwright;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace BlazorFeatures.E2E.Tests.Tests;
 
-[Collection(nameof(E2ECollection))]
-public class LabelInteractiveTests : BrowserTest
+[UITest]
+public partial class LabelInteractiveTests : BrowserTest
 {
-    private readonly ServerFixture<E2ETestAssembly> _fixture;
     private ServerInstance _server = null!;
     private IPage _page = null!;
 
-    public LabelInteractiveTests(ServerFixture<E2ETestAssembly> fixture)
+    protected override async Task InitializeCoreAsync()
     {
-        _fixture = fixture;
-    }
-
-    public override async ValueTask InitializeAsync()
-    {
-        await base.InitializeAsync();
-        _server = await _fixture.StartServerAsync<App>();
+        await base.InitializeCoreAsync();
+        _server = await StartServerAsync<App>(E2ETestAssembly.Servers);
         var context = await NewContext(new BrowserNewContextOptions().WithServerRouting(_server));
         _page = await context.NewPageAsync();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task LabelInteractiveDemo_GeneratesMatchingIdAndForAttributes()
     {
         await _page.GotoAsync($"{_server.TestUrl}/label-interactive-demo");
@@ -41,11 +35,11 @@ public class LabelInteractiveTests : BrowserTest
         // the generated `id` on its bound <input>. This is the Preview 2 fix
         // covered by the demo page.
         var inputs = await _page.Locator("input.form-control").AllAsync();
-        Assert.NotEmpty(inputs);
+        Assert.IsNotEmpty(inputs);
         foreach (var input in inputs)
         {
             var id = await input.GetAttributeAsync("id");
-            Assert.False(string.IsNullOrEmpty(id), "Each interactive input should have an id.");
+            Assert.IsFalse(string.IsNullOrEmpty(id), "Each interactive input should have an id.");
 
             var matchingLabel = _page.Locator($"label[for='{id}']");
             await Expect(matchingLabel).ToHaveCountAsync(1);
