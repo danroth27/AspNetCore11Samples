@@ -28,7 +28,7 @@
         options.AddAutoPause(pause =&gt;
         {
             pause.Enabled = true;                          // default
-            pause.HiddenDelay = TimeSpan.FromSeconds(10);  // default is 2 minutes
+            pause.HiddenDelay = TimeSpan.FromSeconds(3);   // default is 2 minutes
         });
     });</code></pre>
 
@@ -37,7 +37,7 @@
 <ol>
     <li>Increment the counter and note the circuit and component instance IDs.</li>
     <li>
-        Switch to another <em>browser tab</em> (or minimize the browser) and wait 10 seconds.
+        Switch to another <em>browser tab</em> (or minimize the browser) and wait 3 seconds.
         Merely focusing another window, including undocked dev tools, does not make the page
         hidden and won't trigger auto-pause.
     </li>

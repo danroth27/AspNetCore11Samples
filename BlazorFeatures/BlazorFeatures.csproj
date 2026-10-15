@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SharedComponents\SharedComponents.csproj" />
+    <ProjectReference Include="..\AspNetCore11Samples.ServiceDefaults\AspNetCore11Samples.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

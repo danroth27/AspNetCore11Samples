@@ -194,6 +194,48 @@ dotnet build AspNetCore11Samples.slnx
 dotnet run --project BlazorFeatures
 ```
 
+### BlazorFeatures with Aspire
+
+`AspNetCore11Samples.AppHost` runs `BlazorFeatures` with Aspire-managed HTTP/HTTPS
+ports, a readiness check, and the Aspire dashboard. The app references
+`AspNetCore11Samples.ServiceDefaults` for health checks, service discovery,
+HTTP resilience, and OpenTelemetry logs, traces, and metrics, including the
+Blazor component and circuit instruments.
+
+With the Aspire CLI installed, run from the repository root:
+
+```pwsh
+aspire start --apphost AspNetCore11Samples.AppHost
+aspire wait blazorfeatures --apphost AspNetCore11Samples.AppHost
+```
+
+Open the dashboard URL printed by `aspire start`, then use the `blazorfeatures`
+HTTPS endpoint from **Resources**. You can also set the AppHost as the startup
+project in Visual Studio. The existing `dotnet run --project BlazorFeatures`
+workflow and standalone launch profiles still work.
+
+For the automatic circuit pause demo:
+
+1. Open the app's `/auto-pause` URL directly in three separate browser windows.
+   Tile them so each page is visible; background tabs would already start pausing.
+   Leave the text boxes empty, since dirty inputs defer auto-pause.
+2. In the dashboard's **Metrics** view, select `blazorfeatures`, then
+   `Microsoft.AspNetCore.Components.Server.Circuits` →
+   `aspnetcore.components.circuit.active`. Allow the count to reflect the visible
+   windows. Other open interactive pages also contribute to this count.
+3. Increment a counter, then minimize all three app windows without closing them.
+   After the configured three-second hidden delay, the circuits pause and the
+   active count drops. Metrics export every second when launched through this
+   AppHost; allow for dashboard refresh latency too.
+4. Restore a window. Its persisted counter survives, while a new circuit is created
+   and the active count rises again.
+
+Stop the app and dashboard with:
+
+```pwsh
+aspire stop --apphost AspNetCore11Samples.AppHost
+```
+
 ### Automatic CSRF protection demo
 
 Run the Blazor app and the attacker site in separate terminals, then browse to the attacker at

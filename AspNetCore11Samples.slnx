@@ -1,6 +1,8 @@
 <Solution>
   <Project Path="ApiFeatures/ApiFeatures.csproj" />
   <Project Path="CsrfAttackerSite/CsrfAttackerSite.csproj" />
+  <Project Path="AspNetCore11Samples.AppHost/AspNetCore11Samples.AppHost.csproj" />
+  <Project Path="AspNetCore11Samples.ServiceDefaults/AspNetCore11Samples.ServiceDefaults.csproj" />
   <Project Path="BackendApi/BackendApi.csproj" />
   <Project Path="BlazorFeatures/BlazorFeatures.csproj" />
   <Project Path="BlazorFeatures.E2E.Tests/BlazorFeatures.E2E.Tests.csproj" />

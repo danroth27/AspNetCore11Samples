@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "AspNetCore11Samples.AppHost.csproj"
+  }
+}

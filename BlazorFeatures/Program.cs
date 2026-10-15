@@ -9,6 +9,8 @@ using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -94,6 +96,7 @@ app.MapGet("/Culture/Set", (HttpContext context, string culture, string redirect
 });
 
 app.MapStaticAssets();
+app.MapDefaultEndpoints();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
@@ -116,11 +119,11 @@ app.MapRazorComponents<App>()
         // Preview 7 (#67098): pause the circuit automatically once the tab has been
         // hidden for HiddenDelay, releasing the SignalR connection and server memory
         // until the user returns. Ships in the Microsoft.AspNetCore.Components.Server.AutoPause
-        // package. 10s here so the behavior is easy to observe; the default is 2 minutes.
+        // package. 3s here so the behavior is easy to observe; the default is 2 minutes.
         options.AddAutoPause(pause =>
         {
             pause.Enabled = true;
-            pause.HiddenDelay = TimeSpan.FromSeconds(10);
+            pause.HiddenDelay = TimeSpan.FromSeconds(3);
         });
     });
 
