@@ -2,32 +2,26 @@ using BlazorFeatures.Components;
 using BlazorFeatures.E2E.Tests.Fixtures;
 using Microsoft.AspNetCore.Components.Testing.Infrastructure;
 using Microsoft.Playwright;
-using Microsoft.Playwright.Xunit.v3;
-using Xunit;
+using Microsoft.AspNetCore.Components.Testing.Playwright;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace BlazorFeatures.E2E.Tests.Tests;
 
-[Collection(nameof(E2ECollection))]
-public class ValidationLocalizationTests : BrowserTest
+[UITest]
+public partial class ValidationLocalizationTests : BrowserTest
 {
-    private readonly ServerFixture<E2ETestAssembly> _fixture;
     private ServerInstance _server = null!;
     private IPage _page = null!;
 
-    public ValidationLocalizationTests(ServerFixture<E2ETestAssembly> fixture)
+    protected override async Task InitializeCoreAsync()
     {
-        _fixture = fixture;
-    }
-
-    public override async ValueTask InitializeAsync()
-    {
-        await base.InitializeAsync();
-        _server = await _fixture.StartServerAsync<App>();
+        await base.InitializeCoreAsync();
+        _server = await StartServerAsync<App>(E2ETestAssembly.Servers);
         var context = await NewContext(new BrowserNewContextOptions().WithServerRouting(_server));
         _page = await context.NewPageAsync();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task AsyncValidationDemo_UsesConventionalResourceKeys()
     {
         await _page.GotoAsync($"{_server.TestUrl}/async-validation");

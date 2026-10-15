@@ -8,14 +8,14 @@
     <IsPackable>false</IsPackable>
     <!-- The Components.Testing App host is marked [RequiresPreviewFeatures] in .NET 11. -->
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
-    <!-- xUnit v3 ships its own runner; do not let the SDK auto-include xUnit v2. -->
-    <IsTestProject>false</IsTestProject>
+    <IsTestProject>true</IsTestProject>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.Testing" Version="11.0.0-preview.7.26381.103" />
-    <PackageReference Include="Microsoft.Playwright.Xunit.v3" Version="1.58.0" />
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Testing" Version="11.0.0-preview.7.26504.105" />
+    <PackageReference Include="MSTest" Version="4.0.2" />
   </ItemGroup>
 
   <ItemGroup>

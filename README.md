@@ -103,8 +103,8 @@ and features. Demos are grouped by the preview that introduced them.
 
 ### BlazorFeatures.E2E.Tests
 End-to-end tests for the BlazorFeatures app using the new
-`Microsoft.AspNetCore.Components.Testing` library (Preview 4), which combines xUnit v3
-collection fixtures, a YARP reverse proxy, and Playwright with Blazor-aware wait helpers.
+`Microsoft.AspNetCore.Components.Testing` library (Preview 4), which now combines MSTest
+lifecycle integration, a YARP reverse proxy, and Playwright with Blazor-aware wait helpers.
 See [BlazorFeatures.E2E.Tests/README.md](BlazorFeatures.E2E.Tests/README.md) for details.
 
 ### BlazorWasmFeatures
@@ -184,22 +184,15 @@ See [Automatic CSRF protection demo](#automatic-csrf-protection-demo) for how to
 
 ## Running the Samples
 
-Requires the .NET 11 RC1 SDK (`11.0.100-rc.1.26425.128`) pinned by `global.json` and used to
-validate these samples.
+Requires the .NET 11 RC2 SDK (`11.0.100-rc.2.26504.105`) or later. There is no
+`global.json`; SDK selection follows the installed SDKs and any parent-directory configuration.
 
 ```pwsh
-dotnet build ApiFeatures/ApiFeatures.csproj
-dotnet build BlazorFeatures.E2E.Tests/BlazorFeatures.E2E.Tests.csproj
-dotnet build SignalRFeatures/SignalRFeatures.csproj
-dotnet build SignalRClient/SignalRClient.csproj
+dotnet build AspNetCore11Samples.slnx
 
 # Run a project, e.g. the Blazor Web App:
 dotnet run --project BlazorFeatures
 ```
-
-The full solution also contains a browser-WASM project. The installed RC1 SDK build requests
-`Microsoft.NETCore.App.Runtime.Mono.browser-wasm` version `11.0.0-rc.1.26425.128`, which isn't
-available on the configured feed; build the targeted server projects above with this SDK.
 
 ### Automatic CSRF protection demo
 
@@ -267,9 +260,8 @@ and the gateway proxies it to `BackendApi` via YARP. The proxy route/cluster (an
 address) are configured with `ReverseProxy__*` environment variables in
 `BlazorWasmFeatures/Properties/launchSettings.json`.
 
-`NuGet.config` keeps the
-[public .NET 11 feed](https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json)
-available for prerelease packages that haven't shipped to NuGet.org. ASP.NET Core package references
-use the RC1 build `11.0.0-rc.1.26425.128`. The experimental
-`Microsoft.AspNetCore.Components.Testing` package remains on the known-working Preview 7 build
-`11.0.0-preview.7.26381.103`.
+ASP.NET Core package references use the RC2 build `11.0.0-rc.2.26504.105`.
+The experimental `Microsoft.AspNetCore.Components.Testing` package retains a Preview 7
+version prefix, but uses the matching RC2 build `11.0.0-preview.7.26504.105`.
+All required packages are available on NuGet.org; no repository-specific NuGet configuration
+is needed.
