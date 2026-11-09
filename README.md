@@ -1,7 +1,6 @@
 # ASP.NET Core .NET 11 Samples
 
-Sample projects demonstrating new ASP.NET Core features across the .NET 11 preview
-releases, built for the ASP.NET Community Standup livestream.
+Sample projects demonstrating new ASP.NET Core features in .NET 11, built for the ASP.NET Community Standup livestream.
 
 ## Projects
 
@@ -184,8 +183,7 @@ See [Automatic CSRF protection demo](#automatic-csrf-protection-demo) for how to
 
 ## Running the Samples
 
-Requires the .NET 11 RC2 SDK (`11.0.100-rc.2.26504.105`) or later. There is no
-`global.json`; SDK selection follows the installed SDKs and any parent-directory configuration.
+Requires the stable .NET 11 SDK (`11.0.100`) or later. There is no `global.json`; SDK selection follows the installed SDKs and any parent-directory configuration.
 
 ```pwsh
 dotnet build AspNetCore11Samples.slnx
@@ -302,8 +300,6 @@ and the gateway proxies it to `BackendApi` via YARP. The proxy route/cluster (an
 address) are configured with `ReverseProxy__*` environment variables in
 `BlazorWasmFeatures/Properties/launchSettings.json`.
 
-ASP.NET Core package references use the RC2 build `11.0.0-rc.2.26504.105`.
-The experimental `Microsoft.AspNetCore.Components.Testing` package retains a Preview 7
-version prefix, but uses the matching RC2 build `11.0.0-preview.7.26504.105`.
-All required packages are available on NuGet.org; no repository-specific NuGet configuration
-is needed.
+ASP.NET Core package references use the stable `11.0.0` release. The experimental `Microsoft.AspNetCore.Components.Testing` package retains a Preview 7 version prefix, but uses the matching RTM build `11.0.0-preview.7.26529.118`. The C# union samples still require preview language features.
+
+The RTM packages are not yet available on NuGet.org. Until they are published, restoring requires access to the .NET 11 RTM shipping feed configured in your local NuGet settings; no repository-specific NuGet configuration is included.

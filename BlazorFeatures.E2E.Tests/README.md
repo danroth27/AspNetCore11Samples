@@ -53,7 +53,7 @@ dotnet build BlazorFeatures.E2E.Tests -p:E2EAppMode=publish
 
 ## Updating from the earlier testing package
 
-The RC2 build of this experimental package no longer provides the xUnit
+The .NET 11 RTM build of this experimental package (`11.0.0-preview.7.26529.118`) retains a Preview 7 version prefix and no longer provides the xUnit
 `ServerFixture<T>` integration. Replace xUnit and its Playwright adapter with MSTest,
 create and initialize `ServerFactory<T>` in `[AssemblyInitialize]`, and dispose it in
 `[AssemblyCleanup]`. Mark test classes `[UITest]` and `partial`, use `[TestMethod]`,
